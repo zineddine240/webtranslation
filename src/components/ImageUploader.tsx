@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from "react";
-import { Upload, Image, FileText, X, Loader2, Key, Sparkles } from "lucide-react";
+import { Upload, Image, FileText, X, Loader2, Key, Sparkles, Send, Edit3 } from "lucide-react";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { useToast } from "@/hooks/use-toast";
 
@@ -13,6 +13,8 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [apiKey, setApiKey] = useState(() => localStorage.getItem("gemini_api_key") || "");
   const [showApiKeyInput, setShowApiKeyInput] = useState(!apiKey);
+  const [ocrResult, setOcrResult] = useState("");
+  const [showOcrPanel, setShowOcrPanel] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -41,6 +43,8 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
 
     setIsProcessing(true);
     setUploadedFile(file);
+    setOcrResult("");
+    setShowOcrPanel(false);
 
     try {
       const genAI = new GoogleGenerativeAI(storedKey);
@@ -64,17 +68,19 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
         },
       };
 
-      const prompt = "Extract all the French text from this legal document image. Return only the extracted text, maintaining the original formatting as much as possible. If no text is found, return 'No text detected'.";
+      // Simple prompt as requested
+      const prompt = "extract all text from image";
 
       const result = await model.generateContent([prompt, imagePart]);
       const response = await result.response;
       const extractedText = response.text();
 
-      if (extractedText && extractedText !== "No text detected") {
-        onTextExtracted(extractedText);
+      if (extractedText && extractedText.trim()) {
+        setOcrResult(extractedText);
+        setShowOcrPanel(true);
         toast({
           title: "تم استخراج النص بنجاح ✓",
-          description: "تم استخراج النص الفرنسي وإضافته لحقل الإدخال",
+          description: "يمكنك تعديل النص قبل إرساله للترجمة",
         });
       } else {
         toast({
@@ -83,17 +89,31 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
           variant: "destructive",
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("OCR error:", error);
+      
+      // Better error messages
+      let errorMessage = "فشل في استخراج النص من الصورة.";
+      if (error?.message?.includes("API_KEY_INVALID") || error?.message?.includes("API key")) {
+        errorMessage = "مفتاح API غير صالح. تحقق من المفتاح وحاول مرة أخرى.";
+        localStorage.removeItem("gemini_api_key");
+        setShowApiKeyInput(true);
+        setApiKey("");
+      } else if (error?.message?.includes("quota")) {
+        errorMessage = "تم تجاوز حد الاستخدام. حاول مرة أخرى لاحقاً.";
+      } else if (error?.message?.includes("network") || error?.message?.includes("fetch")) {
+        errorMessage = "خطأ في الاتصال. تحقق من اتصالك بالإنترنت.";
+      }
+      
       toast({
         title: "فشل التعرف الضوئي",
-        description: "فشل في استخراج النص من الصورة. تحقق من مفتاح API وحاول مرة أخرى.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
       setIsProcessing(false);
     }
-  }, [onTextExtracted, toast]);
+  }, [toast]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -130,10 +150,22 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
 
   const clearFile = useCallback(() => {
     setUploadedFile(null);
+    setOcrResult("");
+    setShowOcrPanel(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   }, []);
+
+  const sendToTranslation = useCallback(() => {
+    if (ocrResult.trim()) {
+      onTextExtracted(ocrResult);
+      toast({
+        title: "تم الإرسال ✓",
+        description: "تم إرسال النص لحقل الترجمة",
+      });
+    }
+  }, [ocrResult, onTextExtracted, toast]);
 
   return (
     <div className="glass-card rounded-2xl p-6 space-y-4 animate-slide-up" style={{ animationDelay: "0.2s" }}>
@@ -264,6 +296,33 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
           </div>
         )}
       </div>
+
+      {/* OCR Result Panel - Editable */}
+      {showOcrPanel && (
+        <div className="space-y-3 animate-scale-in">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Edit3 className="w-4 h-4 text-accent" />
+              <h3 className="text-sm font-semibold text-foreground">نتيجة OCR - قابل للتعديل</h3>
+            </div>
+            <p className="text-xs text-muted-foreground">Résultat OCR - Modifiable</p>
+          </div>
+          <textarea
+            value={ocrResult}
+            onChange={(e) => setOcrResult(e.target.value)}
+            className="w-full h-40 bg-muted/50 rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none text-sm leading-relaxed"
+            dir="auto"
+            placeholder="النص المستخرج سيظهر هنا..."
+          />
+          <button
+            onClick={sendToTranslation}
+            className="w-full btn-primary py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2"
+          >
+            <Send className="w-4 h-4" />
+            إرسال للترجمة
+          </button>
+        </div>
+      )}
     </div>
   );
 };
