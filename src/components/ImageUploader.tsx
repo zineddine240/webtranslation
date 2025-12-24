@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from "react";
-import { Upload, Image, FileText, X, Loader2, Key } from "lucide-react";
+import { Upload, Image, FileText, X, Loader2, Key, Sparkles } from "lucide-react";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { useToast } from "@/hooks/use-toast";
 
@@ -21,8 +21,8 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
       localStorage.setItem("gemini_api_key", apiKey.trim());
       setShowApiKeyInput(false);
       toast({
-        title: "API Key Saved",
-        description: "Your Gemini API key has been saved securely.",
+        title: "تم حفظ المفتاح",
+        description: "تم حفظ مفتاح Gemini API بنجاح",
       });
     }
   }, [apiKey, toast]);
@@ -32,8 +32,8 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
     if (!storedKey) {
       setShowApiKeyInput(true);
       toast({
-        title: "API Key Required",
-        description: "Please enter your Google Gemini API key to use OCR.",
+        title: "مفتاح API مطلوب",
+        description: "الرجاء إدخال مفتاح Google Gemini API لاستخدام التعرف الضوئي",
         variant: "destructive",
       });
       return;
@@ -46,7 +46,6 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
       const genAI = new GoogleGenerativeAI(storedKey);
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-      // Convert file to base64
       const reader = new FileReader();
       const base64Data = await new Promise<string>((resolve, reject) => {
         reader.onload = () => {
@@ -74,21 +73,21 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
       if (extractedText && extractedText !== "No text detected") {
         onTextExtracted(extractedText);
         toast({
-          title: "Text Extracted",
-          description: "French text has been extracted and added to the input field.",
+          title: "تم استخراج النص بنجاح ✓",
+          description: "تم استخراج النص الفرنسي وإضافته لحقل الإدخال",
         });
       } else {
         toast({
-          title: "No Text Found",
-          description: "Could not detect any text in the uploaded image.",
+          title: "لم يتم العثور على نص",
+          description: "لم يتم الكشف عن أي نص في الصورة المرفوعة",
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error("OCR error:", error);
       toast({
-        title: "OCR Failed",
-        description: "Failed to extract text from the image. Please check your API key and try again.",
+        title: "فشل التعرف الضوئي",
+        description: "فشل في استخراج النص من الصورة. تحقق من مفتاح API وحاول مرة أخرى.",
         variant: "destructive",
       });
     } finally {
@@ -115,8 +114,8 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
       processImage(file);
     } else {
       toast({
-        title: "Invalid File",
-        description: "Please upload an image (JPG, PNG) or PDF file.",
+        title: "ملف غير صالح",
+        description: "الرجاء رفع صورة (JPG, PNG) أو ملف PDF",
         variant: "destructive",
       });
     }
@@ -139,50 +138,59 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
   return (
     <div className="glass-card rounded-2xl p-6 space-y-4 animate-slide-up" style={{ animationDelay: "0.2s" }}>
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center">
-            <FileText className="w-4 h-4 text-accent" />
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-secondary/30 to-secondary/10 flex items-center justify-center">
+            <FileText className="w-5 h-5 text-secondary" />
           </div>
-          <h2 className="text-lg font-semibold text-foreground">Document OCR</h2>
+          <div>
+            <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+              التعرف الضوئي على المستندات
+              <Sparkles className="w-4 h-4 text-accent" />
+            </h2>
+            <p className="text-xs text-muted-foreground">OCR - Reconnaissance de documents</p>
+          </div>
         </div>
         <button
           onClick={() => setShowApiKeyInput(!showApiKeyInput)}
-          className="p-2 rounded-lg hover:bg-accent/20 transition-all duration-300"
-          aria-label="API Key Settings"
+          className={`p-2.5 rounded-xl transition-all duration-300 ${
+            showApiKeyInput ? "bg-primary/20" : "hover:bg-primary/20"
+          }`}
+          aria-label="إعدادات API"
         >
-          <Key className="w-4 h-4 text-muted-foreground hover:text-accent" />
+          <Key className={`w-5 h-5 ${showApiKeyInput ? "text-primary" : "text-muted-foreground hover:text-primary"}`} />
         </button>
       </div>
 
       {showApiKeyInput && (
-        <div className="glass-input rounded-xl p-4 space-y-3 animate-scale-in">
-          <p className="text-sm text-muted-foreground">
-            Enter your Google Gemini API key to enable OCR text extraction.
+        <div className="glass-input rounded-xl p-4 space-y-3 animate-scale-in border-2 border-primary/20">
+          <p className="text-sm text-muted-foreground text-right">
+            أدخل مفتاح Google Gemini API لتفعيل ميزة التعرف الضوئي على النصوص
           </p>
-          <div className="flex gap-2">
+          <div className="flex gap-3">
             <input
               type="password"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
-              placeholder="Enter Gemini API key..."
-              className="flex-1 bg-muted/50 rounded-lg px-4 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent"
+              placeholder="أدخل مفتاح Gemini API..."
+              className="flex-1 bg-muted/50 rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              dir="ltr"
             />
             <button
               onClick={saveApiKey}
-              className="btn-gradient px-4 py-2 rounded-lg text-sm"
+              className="btn-primary px-6 py-3 rounded-xl text-sm font-semibold"
             >
-              Save
+              حفظ
             </button>
           </div>
           <p className="text-xs text-muted-foreground">
-            Get your API key from{" "}
+            احصل على مفتاح API من{" "}
             <a
               href="https://makersuite.google.com/app/apikey"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-accent hover:underline"
+              className="text-primary hover:underline font-medium"
             >
-              Google AI Studio
+              Google AI Studio ←
             </a>
           </p>
         </div>
@@ -194,7 +202,7 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
         className={`drop-zone rounded-xl p-8 cursor-pointer transition-all duration-300 ${
-          isDragging ? "dragging" : ""
+          isDragging ? "dragging border-primary" : ""
         }`}
       >
         <input
@@ -206,14 +214,22 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
         />
 
         {isProcessing ? (
-          <div className="flex flex-col items-center gap-3">
-            <Loader2 className="w-12 h-12 text-accent animate-spin-slow" />
-            <p className="text-muted-foreground">Extracting text...</p>
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative">
+              <Loader2 className="w-16 h-16 text-primary animate-spin-slow" />
+              <Sparkles className="w-6 h-6 text-accent absolute -top-2 -right-2 animate-pulse" />
+            </div>
+            <div className="text-center">
+              <p className="text-foreground font-medium">جاري استخراج النص...</p>
+              <p className="text-sm text-muted-foreground">Extraction en cours...</p>
+            </div>
           </div>
         ) : uploadedFile ? (
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Image className="w-8 h-8 text-accent" />
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-xl bg-primary/20 flex items-center justify-center">
+                <Image className="w-7 h-7 text-primary" />
+              </div>
               <div>
                 <p className="text-foreground font-medium">{uploadedFile.name}</p>
                 <p className="text-sm text-muted-foreground">
@@ -226,20 +242,23 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
                 e.stopPropagation();
                 clearFile();
               }}
-              className="p-2 rounded-lg hover:bg-destructive/20 transition-all duration-300"
+              className="p-3 rounded-xl hover:bg-destructive/20 transition-all duration-300"
             >
-              <X className="w-4 h-4 text-muted-foreground hover:text-destructive" />
+              <X className="w-5 h-5 text-muted-foreground hover:text-destructive" />
             </button>
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-16 h-16 rounded-2xl bg-accent/10 flex items-center justify-center">
-              <Upload className="w-8 h-8 text-accent" />
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/10 flex items-center justify-center">
+              <Upload className="w-10 h-10 text-primary" />
             </div>
             <div className="text-center">
-              <p className="text-foreground font-medium">Drop your document here</p>
-              <p className="text-sm text-muted-foreground">
-                or click to browse (JPG, PNG, PDF)
+              <p className="text-foreground font-medium text-lg">أسقط مستندك هنا</p>
+              <p className="text-muted-foreground">
+                أو انقر للتصفح
+              </p>
+              <p className="text-sm text-muted-foreground mt-2">
+                (JPG, PNG, PDF)
               </p>
             </div>
           </div>
