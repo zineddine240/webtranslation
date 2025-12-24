@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from "react";
-import { Upload, Image, FileText, X, Loader2, Key, Sparkles, Send, Edit3 } from "lucide-react";
+import { Upload, Image, FileText, X, Loader2, Key, Sparkles, Send, Edit3, Eye } from "lucide-react";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { useToast } from "@/hooks/use-toast";
 
@@ -11,6 +11,7 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState(() => localStorage.getItem("gemini_api_key") || "");
   const [showApiKeyInput, setShowApiKeyInput] = useState(!apiKey);
   const [ocrResult, setOcrResult] = useState("");
@@ -45,6 +46,11 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
     setUploadedFile(file);
     setOcrResult("");
     setShowOcrPanel(false);
+    
+    // Create image preview
+    const previewReader = new FileReader();
+    previewReader.onload = () => setImagePreview(previewReader.result as string);
+    previewReader.readAsDataURL(file);
 
     try {
       const genAI = new GoogleGenerativeAI(storedKey);
@@ -154,6 +160,7 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
 
   const clearFile = useCallback(() => {
     setUploadedFile(null);
+    setImagePreview(null);
     setOcrResult("");
     setShowOcrPanel(false);
     if (fileInputRef.current) {
@@ -301,30 +308,51 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
         )}
       </div>
 
-      {/* OCR Result Panel - Editable */}
-      {showOcrPanel && (
-        <div className="space-y-3 animate-scale-in">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Edit3 className="w-4 h-4 text-accent" />
-              <h3 className="text-sm font-semibold text-foreground">نتيجة OCR - قابل للتعديل</h3>
+      {/* Two-Panel Layout: Image Preview + OCR Result */}
+      {(imagePreview || showOcrPanel) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-scale-in">
+          {/* Image Preview Panel */}
+          {imagePreview && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Eye className="w-4 h-4 text-primary" />
+                <h3 className="text-sm font-semibold text-foreground">معاينة الصورة</h3>
+                <p className="text-xs text-muted-foreground mr-auto">Aperçu de l'image</p>
+              </div>
+              <div className="bg-muted/30 rounded-xl p-2 border border-border/50 overflow-hidden">
+                <img 
+                  src={imagePreview} 
+                  alt="Preview" 
+                  className="w-full h-48 object-contain rounded-lg"
+                />
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">Résultat OCR - Modifiable</p>
-          </div>
-          <textarea
-            value={ocrResult}
-            onChange={(e) => setOcrResult(e.target.value)}
-            className="w-full h-40 bg-muted/50 rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none text-sm leading-relaxed"
-            dir="auto"
-            placeholder="النص المستخرج سيظهر هنا..."
-          />
-          <button
-            onClick={sendToTranslation}
-            className="w-full btn-primary py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2"
-          >
-            <Send className="w-4 h-4" />
-            إرسال للترجمة
-          </button>
+          )}
+
+          {/* OCR Result Panel */}
+          {showOcrPanel && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Edit3 className="w-4 h-4 text-accent" />
+                <h3 className="text-sm font-semibold text-foreground">نتيجة OCR</h3>
+                <p className="text-xs text-muted-foreground mr-auto">Résultat OCR</p>
+              </div>
+              <textarea
+                value={ocrResult}
+                onChange={(e) => setOcrResult(e.target.value)}
+                className="w-full h-48 bg-muted/50 rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none text-sm leading-relaxed"
+                dir="auto"
+                placeholder="النص المستخرج سيظهر هنا..."
+              />
+              <button
+                onClick={sendToTranslation}
+                className="w-full btn-primary py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2"
+              >
+                <Send className="w-4 h-4" />
+                إرسال للترجمة
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
