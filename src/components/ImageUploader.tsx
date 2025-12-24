@@ -48,7 +48,7 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
 
     try {
       const genAI = new GoogleGenerativeAI(storedKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
       const reader = new FileReader();
       const base64Data = await new Promise<string>((resolve, reject) => {
@@ -94,14 +94,18 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
       
       // Better error messages
       let errorMessage = "فشل في استخراج النص من الصورة.";
-      if (error?.message?.includes("API_KEY_INVALID") || error?.message?.includes("API key")) {
+      const errorStr = error?.message || error?.toString() || "";
+      
+      if (errorStr.includes("API_KEY_INVALID") || errorStr.includes("API key") || errorStr.includes("invalid")) {
         errorMessage = "مفتاح API غير صالح. تحقق من المفتاح وحاول مرة أخرى.";
         localStorage.removeItem("gemini_api_key");
         setShowApiKeyInput(true);
         setApiKey("");
-      } else if (error?.message?.includes("quota")) {
+      } else if (errorStr.includes("404") || errorStr.includes("not found")) {
+        errorMessage = "خطأ في نموذج الذكاء الاصطناعي. حاول مرة أخرى.";
+      } else if (errorStr.includes("quota")) {
         errorMessage = "تم تجاوز حد الاستخدام. حاول مرة أخرى لاحقاً.";
-      } else if (error?.message?.includes("network") || error?.message?.includes("fetch")) {
+      } else if (errorStr.includes("network") || errorStr.includes("fetch") || errorStr.includes("Failed to fetch")) {
         errorMessage = "خطأ في الاتصال. تحقق من اتصالك بالإنترنت.";
       }
       
