@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef } from "react";
 import { Upload, Image, FileText, X, Loader2, Key, Sparkles, Send, Edit3, Eye } from "lucide-react";
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -30,6 +31,20 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
     }
   }, [apiKey, toast]);
 
+  // Helper function to delay execution
+  const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+  // Models to try in order (fallback mechanism)
+  // IMPORTANT: Do NOT use "models/" prefix - the SDK adds it automatically
+  // 
+  // Available models on free tier (Dec 2024):
+  // - gemini-2.0-flash: Fast, multimodal, good for OCR
+  // - gemini-2.0-flash-lite: Ultra-efficient, lower latency
+  // - gemini-1.5-flash may be deprecated, try 2.0 versions first
+  const MODELS_TO_TRY = [
+    "gemini-3-flash-preview",
+  ];
+
   const processImage = useCallback(async (file: File) => {
     const storedKey = localStorage.getItem("gemini_api_key");
     if (!storedKey) {
@@ -46,7 +61,7 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
     setUploadedFile(file);
     setOcrResult("");
     setShowOcrPanel(false);
-    
+
     // Create image preview
     const previewReader = new FileReader();
     previewReader.onload = () => setImagePreview(previewReader.result as string);
@@ -54,7 +69,6 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
 
     try {
       const genAI = new GoogleGenerativeAI(storedKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
       const reader = new FileReader();
       const base64Data = await new Promise<string>((resolve, reject) => {
@@ -74,12 +88,58 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
         },
       };
 
-      // Simple prompt as requested
-      const prompt = "extract all text from image";
+      // Simple prompt for OCR
+      const prompt = "extract all text from image without any comments and explanations";
 
-      const result = await model.generateContent([prompt, imagePart]);
-      const response = await result.response;
-      const extractedText = response.text();
+      let extractedText = "";
+      let lastError: any = null;
+      const MAX_RETRIES = 3;
+
+      // Try each model with retries
+      for (const modelName of MODELS_TO_TRY) {
+        console.log(`Trying model: ${modelName}`);
+
+        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+          try {
+            const model = genAI.getGenerativeModel({ model: modelName });
+            const result = await model.generateContent([prompt, imagePart]);
+            const response = await result.response;
+            extractedText = response.text();
+
+            if (extractedText && extractedText.trim()) {
+              console.log(`Success with model: ${modelName} on attempt ${attempt}`);
+              break;
+            }
+          } catch (err: any) {
+            lastError = err;
+            const errStr = err?.message || err?.toString() || "";
+            console.log(`Attempt ${attempt} with ${modelName} failed:`, errStr);
+
+            // If it's a rate limit error, wait before retrying
+            if (errStr.includes("429") || errStr.includes("RESOURCE_EXHAUSTED") || errStr.includes("quota") || errStr.includes("rate")) {
+              const waitTime = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s
+              console.log(`Rate limited. Waiting ${waitTime}ms before retry...`);
+              toast({
+                title: `جاري إعادة المحاولة (${attempt}/${MAX_RETRIES})`,
+                description: `انتظار ${waitTime / 1000} ثواني...`,
+              });
+              await delay(waitTime);
+            } else if (errStr.includes("404") || errStr.includes("not found") || errStr.includes("NOT_FOUND")) {
+              // Model not found, try next model immediately
+              console.log(`Model ${modelName} not found, trying next...`);
+              break;
+            } else {
+              // Other error, don't retry
+              throw err;
+            }
+          }
+        }
+
+        // If we got text, break the outer loop
+        if (extractedText && extractedText.trim()) {
+          break;
+        }
+      }
 
       if (extractedText && extractedText.trim()) {
         setOcrResult(extractedText);
@@ -88,6 +148,8 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
           title: "تم استخراج النص بنجاح ✓",
           description: "يمكنك تعديل النص قبل إرساله للترجمة",
         });
+      } else if (lastError) {
+        throw lastError;
       } else {
         toast({
           title: "لم يتم العثور على نص",
@@ -97,24 +159,39 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
       }
     } catch (error: any) {
       console.error("OCR error:", error);
-      
+      console.error("Full error details:", JSON.stringify(error, null, 2));
+
       // Better error messages
       let errorMessage = "فشل في استخراج النص من الصورة.";
       const errorStr = error?.message || error?.toString() || "";
-      
-      if (errorStr.includes("API_KEY_INVALID") || errorStr.includes("API key") || errorStr.includes("invalid")) {
+      const errorStatus = error?.status || error?.response?.status || "";
+
+      console.log("Error string:", errorStr);
+      console.log("Error status:", errorStatus);
+
+      if (errorStr.includes("API_KEY_INVALID") || errorStr.includes("API key not valid") || errorStr.includes("invalid")) {
         errorMessage = "مفتاح API غير صالح. تحقق من المفتاح وحاول مرة أخرى.";
         localStorage.removeItem("gemini_api_key");
         setShowApiKeyInput(true);
         setApiKey("");
-      } else if (errorStr.includes("404") || errorStr.includes("not found")) {
-        errorMessage = "خطأ في نموذج الذكاء الاصطناعي. حاول مرة أخرى.";
-      } else if (errorStr.includes("quota")) {
-        errorMessage = "تم تجاوز حد الاستخدام. حاول مرة أخرى لاحقاً.";
-      } else if (errorStr.includes("network") || errorStr.includes("fetch") || errorStr.includes("Failed to fetch")) {
+      } else if (errorStr.includes("403") || errorStr.includes("PERMISSION_DENIED")) {
+        errorMessage = "مفتاح API ليس لديه صلاحية. تأكد من تفعيل Gemini API في Google Cloud Console.";
+        localStorage.removeItem("gemini_api_key");
+        setShowApiKeyInput(true);
+        setApiKey("");
+      } else if (errorStr.includes("404") || errorStr.includes("not found") || errorStr.includes("NOT_FOUND")) {
+        errorMessage = "جميع النماذج غير متوفرة حالياً. حاول مرة أخرى لاحقاً.";
+      } else if (errorStr.includes("429") || errorStr.includes("RESOURCE_EXHAUSTED") || errorStr.includes("quota") || errorStr.includes("rate")) {
+        errorMessage = "تم تجاوز حد الاستخدام بعد عدة محاولات. انتظر بضع دقائق وحاول مرة أخرى.";
+      } else if (errorStr.includes("network") || errorStr.includes("fetch") || errorStr.includes("Failed to fetch") || errorStr.includes("ENOTFOUND")) {
         errorMessage = "خطأ في الاتصال. تحقق من اتصالك بالإنترنت.";
+      } else if (errorStr.includes("SAFETY") || errorStr.includes("blocked")) {
+        errorMessage = "تم حظر المحتوى لأسباب تتعلق بالسلامة. جرب صورة أخرى.";
+      } else {
+        // Show actual error for debugging
+        errorMessage = `خطأ: ${errorStr.substring(0, 100)}`;
       }
-      
+
       toast({
         title: "فشل التعرف الضوئي",
         description: errorMessage,
@@ -123,7 +200,7 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
     } finally {
       setIsProcessing(false);
     }
-  }, [toast]);
+  }, [delay, toast]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -244,9 +321,8 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowApiKeyInput(!showApiKeyInput)}
-                className={`p-2.5 rounded-xl transition-all duration-300 ${
-                  showApiKeyInput ? "bg-primary/20" : "hover:bg-primary/20"
-                }`}
+                className={`p-2.5 rounded-xl transition-all duration-300 ${showApiKeyInput ? "bg-primary/20" : "hover:bg-primary/20"
+                  }`}
                 aria-label="إعدادات API"
               >
                 <Key className={`w-5 h-5 ${showApiKeyInput ? "text-primary" : "text-muted-foreground hover:text-primary"}`} />
@@ -265,9 +341,8 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             onClick={() => !imagePreview && fileInputRef.current?.click()}
-            className={`w-full h-72 glass-input rounded-xl p-4 overflow-hidden flex items-center justify-center transition-all duration-300 ${
-              isDragging ? "border-primary border-2" : ""
-            } ${!imagePreview ? "cursor-pointer hover:bg-muted/30" : ""}`}
+            className={`w-full h-72 glass-input rounded-xl p-4 overflow-hidden flex items-center justify-center transition-all duration-300 ${isDragging ? "border-primary border-2" : ""
+              } ${!imagePreview ? "cursor-pointer hover:bg-muted/30" : ""}`}
           >
             <input
               ref={fileInputRef}
@@ -289,9 +364,9 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
                 </div>
               </div>
             ) : imagePreview ? (
-              <img 
-                src={imagePreview} 
-                alt="Preview" 
+              <img
+                src={imagePreview}
+                alt="Preview"
                 className="max-w-full max-h-full object-contain rounded-lg"
               />
             ) : (
