@@ -229,7 +229,7 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
       const prompt = "extract all text from image without any comments and explanations";
 
       let extractedText = "";
-      let lastError: any = null;
+      let lastError: any = null; // eslint-disable-line @typescript-eslint/no-explicit-any
       const MAX_RETRIES = 3;
 
       // Try each model with retries
@@ -247,7 +247,7 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
               console.log(`Success with model: ${modelName} on attempt ${attempt}`);
               break;
             }
-          } catch (err: any) {
+          } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
             lastError = err;
             const errStr = err?.message || err?.toString() || "";
             console.log(`Attempt ${attempt} with ${modelName} failed:`, errStr);
@@ -294,7 +294,7 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
           variant: "destructive",
         });
       }
-    } catch (error: any) {
+    } catch (error: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
       console.error("OCR error:", error);
       console.error("Full error details:", JSON.stringify(error, null, 2));
 
