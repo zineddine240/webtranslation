@@ -13,6 +13,8 @@ const MOCK_TRANSLATORS = [
         languages: ["Arabe", "Français", "Anglais"],
         specialties: ["Juridique", "Technique"],
         verified: true,
+        phone: "+213 555 12 34 56",
+        email: "ahmed.benali@example.com",
         image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop"
     },
     {
@@ -23,6 +25,8 @@ const MOCK_TRANSLATORS = [
         languages: ["Arabe", "Français"],
         specialties: ["Juridique", "Médical"],
         verified: true,
+        phone: "+213 777 98 76 54",
+        email: "sarah.touati@example.com",
         image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop"
     },
     {
@@ -33,6 +37,8 @@ const MOCK_TRANSLATORS = [
         languages: ["Arabe", "Français", "Espagnol"],
         specialties: ["Juridique", "Finance"],
         verified: true,
+        phone: "+213 661 22 33 44",
+        email: "karim.meziant@example.com",
         image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop"
     },
     {
@@ -43,6 +49,8 @@ const MOCK_TRANSLATORS = [
         languages: ["Arabe", "Français", "Anglais", "Chinois"],
         specialties: ["Juridique", "Commercial", "Technique"],
         verified: true,
+        phone: "+213 25 40 50 60",
+        email: "contact@cabinet-amrani.com",
         image: "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=400&h=400&fit=crop"
     },
     {
@@ -53,6 +61,8 @@ const MOCK_TRANSLATORS = [
         languages: ["Arabe", "Français", "Italien"],
         specialties: ["Juridique", "Administratif"],
         verified: true,
+        phone: "+213 550 11 22 33",
+        email: "nadia.belkacem@example.com",
         image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop"
     },
     {
@@ -63,6 +73,8 @@ const MOCK_TRANSLATORS = [
         languages: ["Arabe", "Français", "Russe"],
         specialties: ["Juridique", "Scientifique"],
         verified: true,
+        phone: "+213 660 99 88 77",
+        email: "yacine.derbal@example.com",
         image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop"
     }
 ];
@@ -81,7 +93,18 @@ const Traducteurs = () => {
         return matchesSearch;
     });
 
-    const cities = ["Alger", "Oran", "Constantine", "Blida", "Setif", "Annaba"];
+    const cities = [
+        "Adrar", "Chlef", "Laghouat", "Oum El Bouaghi", "Batna", "Béjaïa", "Biskra", "Béchar",
+        "Blida", "Bouira", "Tamanrasset", "Tébessa", "Tlemcen", "Tiaret", "Tizi Ouzou", "Alger",
+        "Djelfa", "Jijel", "Sétif", "Saïda", "Skikda", "Sidi Bel Abbès", "Annaba", "Guelma",
+        "Constantine", "Médéa", "Mostaganem", "M’Sila", "Mascara", "Ouargla", "Oran", "El Bayadh",
+        "Illizi", "Bordj Bou Arreridj", "Boumerdès", "El Tarf", "Tindouf", "Tissemsilt", "El Oued",
+        "Khenchela", "Souk Ahras", "Tipaza", "Mila", "Aïn Defla", "Naâma", "Aïn Témouchent",
+        "Ghardaïa", "Relizane", "Timimoun", "Bordj Badji Mokhtar", "Ouled Djellal", "Béni Abbès",
+        "In Salah", "In Guezzam", "Touggourt", "Djanet", "El Meghaier", "El Menia",
+        "Aflou", "Barika", "Ksar Chellala", "Messaad", "Aïn Oussara", "Bou Saâda",
+        "El Abiodh Sidi Cheikh", "El Kantara", "Bir El Ater", "Ksar El Boukhari", "El Aricha"
+    ].sort();
 
     return (
         <div className="min-h-screen bg-background text-foreground algerian-pattern">
@@ -198,13 +221,17 @@ const Traducteurs = () => {
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-3 mt-6">
-                                    <Button variant="outline" className="w-full glass-input hover:bg-primary hover:text-white transition-colors">
-                                        <Phone className="w-4 h-4 mr-2" />
-                                        Appeler
+                                    <Button variant="outline" className="w-full glass-input hover:bg-primary hover:text-white transition-colors" asChild>
+                                        <a href={`tel:${translator.phone}`}>
+                                            <Phone className="w-4 h-4 mr-2" />
+                                            Appeler
+                                        </a>
                                     </Button>
-                                    <Button className="w-full btn-gold">
-                                        <Mail className="w-4 h-4 mr-2" />
-                                        Contact
+                                    <Button className="w-full btn-gold" asChild>
+                                        <a href={`mailto:${translator.email}`}>
+                                            <Mail className="w-4 h-4 mr-2" />
+                                            Contact
+                                        </a>
                                     </Button>
                                 </div>
                             </div>
