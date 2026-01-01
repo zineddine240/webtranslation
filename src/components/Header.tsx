@@ -29,6 +29,8 @@ const Header = () => {
     navigate("/auth");
   };
 
+  const displayName = profile?.display_name || user?.email?.split('@')[0] || "مستخدم";
+
   return (
     <header className="glass-card px-6 py-4 mb-8 rounded-2xl animate-fade-in">
       <div className="flex items-center justify-between">
@@ -84,7 +86,7 @@ const Header = () => {
                   </div>
                   <div className="text-left hidden sm:block">
                     <p className="text-sm font-semibold text-foreground">
-                      {profile?.display_name || "مستخدم"}
+                      {displayName}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {profile?.profession || "مترجم رسمي"}
@@ -95,7 +97,7 @@ const Header = () => {
               <DropdownMenuContent align="end" className="w-56 glass-card border-border">
                 <div className="px-3 py-2">
                   <p className="text-sm font-medium text-foreground">
-                    {profile?.display_name || "مستخدم"}
+                    {displayName}
                   </p>
                   <p className="text-xs text-muted-foreground">{user.email}</p>
                 </div>
