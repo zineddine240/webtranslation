@@ -11,7 +11,7 @@ const MOCK_TRANSLATORS = [
         title: "Traducteur Agréé",
         location: "Alger, Centre",
         languages: ["Arabe", "Français", "Anglais"],
-        specialties: ["Juridique", "Technique"],
+        pairs: ["Arabe ↔ Français", "Français ↔ Anglais", "Arabe ↔ Anglais"],
         verified: true,
         phone: "+213 555 12 34 56",
         email: "ahmed.benali@example.com",
@@ -23,7 +23,7 @@ const MOCK_TRANSLATORS = [
         title: "Traductrice Assermentée",
         location: "Oran, Es-Senia",
         languages: ["Arabe", "Français"],
-        specialties: ["Juridique", "Médical"],
+        pairs: ["Arabe ↔ Français"],
         verified: true,
         phone: "+213 777 98 76 54",
         email: "sarah.touati@example.com",
@@ -35,7 +35,7 @@ const MOCK_TRANSLATORS = [
         title: "Expert Traducteur",
         location: "Constantine",
         languages: ["Arabe", "Français", "Espagnol"],
-        specialties: ["Juridique", "Finance"],
+        pairs: ["Arabe ↔ Français", "Français ↔ Espagnol"],
         verified: true,
         phone: "+213 661 22 33 44",
         email: "karim.meziant@example.com",
@@ -47,7 +47,7 @@ const MOCK_TRANSLATORS = [
         title: "Bureau de Traduction",
         location: "Blida",
         languages: ["Arabe", "Français", "Anglais", "Chinois"],
-        specialties: ["Juridique", "Commercial", "Technique"],
+        pairs: ["Arabe ↔ Chinois", "Français ↔ Anglais", "Arabe ↔ Français"],
         verified: true,
         phone: "+213 25 40 50 60",
         email: "contact@cabinet-amrani.com",
@@ -59,7 +59,7 @@ const MOCK_TRANSLATORS = [
         title: "Traductrice Officielle",
         location: "Setif",
         languages: ["Arabe", "Français", "Italien"],
-        specialties: ["Juridique", "Administratif"],
+        pairs: ["Arabe ↔ Italien", "Arabe ↔ Français"],
         verified: true,
         phone: "+213 550 11 22 33",
         email: "nadia.belkacem@example.com",
@@ -71,7 +71,7 @@ const MOCK_TRANSLATORS = [
         title: "Traducteur Expert",
         location: "Annaba",
         languages: ["Arabe", "Français", "Russe"],
-        specialties: ["Juridique", "Scientifique"],
+        pairs: ["Arabe ↔ Russe", "Français ↔ Russe"],
         verified: true,
         phone: "+213 660 99 88 77",
         email: "yacine.derbal@example.com",
@@ -79,32 +79,33 @@ const MOCK_TRANSLATORS = [
     }
 ];
 
+// Move this outside the component
+export const ALGERIA_WILAYAS = [
+    "Adrar", "Chlef", "Laghouat", "Oum El Bouaghi", "Batna", "Béjaïa", "Biskra", "Béchar",
+    "Blida", "Bouira", "Tamanrasset", "Tébessa", "Tlemcen", "Tiaret", "Tizi Ouzou", "Alger",
+    "Djelfa", "Jijel", "Sétif", "Saïda", "Skikda", "Sidi Bel Abbès", "Annaba", "Guelma",
+    "Constantine", "Médéa", "Mostaganem", "M’Sila", "Mascara", "Ouargla", "Oran", "El Bayadh",
+    "Illizi", "Bordj Bou Arreridj", "Boumerdès", "El Tarf", "Tindouf", "Tissemsilt", "El Oued",
+    "Khenchela", "Souk Ahras", "Tipaza", "Mila", "Aïn Defla", "Naâma", "Aïn Témouchent",
+    "Ghardaïa", "Relizane", "Timimoun", "Bordj Badji Mokhtar", "Ouled Djellal", "Béni Abbès",
+    "In Salah", "In Guezzam", "Touggourt", "Djanet", "El Meghaier", "El Menia",
+    "Aflou", "Barika", "Ksar Chellala", "Messaad", "Aïn Oussara", "Bou Saâda",
+    "El Abiodh Sidi Cheikh", "El Kantara", "Bir El Ater", "Ksar El Boukhari", "El Aricha"
+].sort();
+
 const Traducteurs = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedCity, setSelectedCity] = useState("all");
 
     const filteredTranslators = MOCK_TRANSLATORS.filter(translator => {
         const matchesSearch = translator.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            translator.specialties.some(s => s.toLowerCase().includes(searchTerm.toLowerCase()));
+            (translator as any).pairs?.some((s: string) => s.toLowerCase().includes(searchTerm.toLowerCase()));
 
         if (selectedCity !== "all") {
             return matchesSearch && translator.location.includes(selectedCity);
         }
         return matchesSearch;
     });
-
-    const cities = [
-        "Adrar", "Chlef", "Laghouat", "Oum El Bouaghi", "Batna", "Béjaïa", "Biskra", "Béchar",
-        "Blida", "Bouira", "Tamanrasset", "Tébessa", "Tlemcen", "Tiaret", "Tizi Ouzou", "Alger",
-        "Djelfa", "Jijel", "Sétif", "Saïda", "Skikda", "Sidi Bel Abbès", "Annaba", "Guelma",
-        "Constantine", "Médéa", "Mostaganem", "M’Sila", "Mascara", "Ouargla", "Oran", "El Bayadh",
-        "Illizi", "Bordj Bou Arreridj", "Boumerdès", "El Tarf", "Tindouf", "Tissemsilt", "El Oued",
-        "Khenchela", "Souk Ahras", "Tipaza", "Mila", "Aïn Defla", "Naâma", "Aïn Témouchent",
-        "Ghardaïa", "Relizane", "Timimoun", "Bordj Badji Mokhtar", "Ouled Djellal", "Béni Abbès",
-        "In Salah", "In Guezzam", "Touggourt", "Djanet", "El Meghaier", "El Menia",
-        "Aflou", "Barika", "Ksar Chellala", "Messaad", "Aïn Oussara", "Bou Saâda",
-        "El Abiodh Sidi Cheikh", "El Kantara", "Bir El Ater", "Ksar El Boukhari", "El Aricha"
-    ].sort();
 
     return (
         <div className="min-h-screen bg-background text-foreground algerian-pattern">
@@ -157,7 +158,7 @@ const Traducteurs = () => {
                                     onChange={(e) => setSelectedCity(e.target.value)}
                                 >
                                     <option value="all">Toutes les wilayas</option>
-                                    {cities.map(city => (
+                                    {ALGERIA_WILAYAS.map(city => (
                                         <option key={city} value={city}>{city}</option>
                                     ))}
                                 </select>
@@ -212,9 +213,9 @@ const Traducteurs = () => {
                                     </div>
 
                                     <div className="flex flex-wrap gap-2">
-                                        {translator.specialties.map((spec, i) => (
-                                            <span key={i} className="text-xs px-2 py-1 rounded-md bg-muted text-muted-foreground">
-                                                {spec}
+                                        {(translator as any).pairs?.map((pair: string, i: number) => (
+                                            <span key={i} className="text-xs px-2 py-1 rounded-md bg-muted text-muted-foreground font-medium">
+                                                {pair}
                                             </span>
                                         ))}
                                     </div>

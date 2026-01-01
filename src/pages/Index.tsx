@@ -57,13 +57,21 @@ const Index = () => {
 
         <main className="space-y-8">
           {/* Hero section */}
-          <div className="text-center py-6 animate-fade-in">
+          <div className="text-center py-6 animate-fade-in relative">
             <h2 className="text-2xl md:text-3xl font-bold font-display text-foreground mb-2">
               منصة الترجمة القانونية الجزائرية
             </h2>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground mb-6">
               Plateforme de traduction juridique algérienne • French ↔ Arabic
             </p>
+
+            <a href="/rejoindre" className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-input text-xs font-medium text-primary hover:bg-primary/5 transition-colors border border-primary/10">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+              </span>
+              Traducteur ? Soumettre ma candidature
+            </a>
           </div>
 
           <TranslationPanel

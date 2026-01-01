@@ -122,13 +122,19 @@ const Landing = () => {
                         </div>
 
                         {/* Stats */}
-                        <div className="flex flex-wrap items-center justify-center gap-8 md:gap-16">
+                        <div className="flex flex-wrap items-center justify-center gap-8 md:gap-16 mb-8">
                             {stats.map((stat, index) => (
                                 <div key={index} className="text-center">
                                     <p className="text-3xl md:text-4xl font-bold gradient-text">{stat.value}</p>
                                     <p className="text-sm text-muted-foreground">{stat.label}</p>
                                 </div>
                             ))}
+                        </div>
+
+                        <div className="text-center">
+                            <Link to="/rejoindre" className="text-sm text-primary hover:underline font-medium">
+                                Vous êtes traducteur ? Rejoignez le réseau →
+                            </Link>
                         </div>
                     </div>
                 </section>
