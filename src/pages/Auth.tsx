@@ -24,7 +24,7 @@ const Auth = () => {
 
   useEffect(() => {
     if (user) {
-      navigate("/");
+      navigate("/dashboard");
     }
   }, [user, navigate]);
 
@@ -154,21 +154,19 @@ const Auth = () => {
           <div className="flex bg-muted/50 rounded-xl p-1 mb-8">
             <button
               onClick={() => setIsLogin(true)}
-              className={`flex-1 py-3 rounded-lg font-semibold transition-all duration-300 ${
-                isLogin
+              className={`flex-1 py-3 rounded-lg font-semibold transition-all duration-300 ${isLogin
                   ? "bg-primary text-primary-foreground shadow-lg"
                   : "text-muted-foreground hover:text-foreground"
-              }`}
+                }`}
             >
               تسجيل الدخول
             </button>
             <button
               onClick={() => setIsLogin(false)}
-              className={`flex-1 py-3 rounded-lg font-semibold transition-all duration-300 ${
-                !isLogin
+              className={`flex-1 py-3 rounded-lg font-semibold transition-all duration-300 ${!isLogin
                   ? "bg-primary text-primary-foreground shadow-lg"
                   : "text-muted-foreground hover:text-foreground"
-              }`}
+                }`}
             >
               حساب جديد
             </button>
