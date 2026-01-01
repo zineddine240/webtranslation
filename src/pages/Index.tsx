@@ -1,16 +1,14 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { Navigate } from "react-router-dom";
 import Header from "@/components/Header";
 import TranslationPanel from "@/components/TranslationPanel";
 import ImageUploader from "@/components/ImageUploader";
-import TranslationHistory from "@/components/TranslationHistory";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslations } from "@/hooks/useTranslations";
 import { Loader2, Star } from "lucide-react";
 
 const Index = () => {
   const [frenchText, setFrenchText] = useState("");
-  const [historyRefresh, setHistoryRefresh] = useState(0);
   const { user, loading } = useAuth();
   const { saveTranslation } = useTranslations();
 
@@ -20,7 +18,6 @@ const Index = () => {
 
   const handleTranslationComplete = useCallback(async (french: string, arabic: string) => {
     await saveTranslation(french, arabic);
-    setHistoryRefresh((prev) => prev + 1);
   }, [saveTranslation]);
 
   const handleSelectFromHistory = useCallback((french: string, _arabic: string) => {
@@ -49,7 +46,7 @@ const Index = () => {
         <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl animate-float" />
         <div className="absolute bottom-20 right-10 w-96 h-96 bg-secondary/5 rounded-full blur-3xl animate-float" style={{ animationDelay: "1.5s" }} />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-accent/5 rounded-full blur-3xl" />
-        
+
         {/* Subtle star decorations */}
         <Star className="absolute top-32 right-20 w-4 h-4 text-secondary/20 fill-secondary/20" />
         <Star className="absolute bottom-40 left-32 w-3 h-3 text-secondary/15 fill-secondary/15" />
@@ -75,12 +72,9 @@ const Index = () => {
             onTranslationComplete={handleTranslationComplete}
           />
 
-          <div className="grid lg:grid-cols-2 gap-6">
+
+          <div className="w-full">
             <ImageUploader onTextExtracted={handleTextExtracted} />
-            <TranslationHistory
-              refreshTrigger={historyRefresh}
-              onSelectTranslation={handleSelectFromHistory}
-            />
           </div>
         </main>
 

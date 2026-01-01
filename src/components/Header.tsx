@@ -87,7 +87,7 @@ const Header = () => {
                       {profile?.display_name || "مستخدم"}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {profile?.profession || "محترف قانوني"}
+                      {profile?.profession || "مترجم رسمي"}
                     </p>
                   </div>
                 </button>
