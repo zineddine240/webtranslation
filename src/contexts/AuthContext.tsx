@@ -9,6 +9,7 @@ interface Profile {
   avatar_url: string | null;
   profession: string | null;
   preferred_language: string;
+  is_admin?: boolean;
 }
 
 interface AuthContextType {
@@ -30,15 +31,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = async (userId: string) => {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("user_id", userId)
-      .maybeSingle();
+  const fetchProfile = async (currentUser: User) => {
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*, is_admin")
+        .eq("user_id", currentUser.id)
+        .maybeSingle();
 
-    if (!error && data) {
-      setProfile(data);
+      if (error) {
+        console.error("Error fetching profile:", error);
+        return;
+      }
+
+      if (data) {
+        setProfile(data);
+      } else {
+        // Profile doesn't exist, create it
+        console.log("Profile missing, creating new profile for:", currentUser.id);
+        const { data: newProfile, error: createError } = await supabase
+          .from("profiles")
+          .insert({
+            user_id: currentUser.id,
+            display_name: currentUser.user_metadata?.display_name || currentUser.email?.split('@')[0],
+            preferred_language: 'fr',
+            is_admin: false
+          })
+          .select()
+          .maybeSingle(); // Use maybeSingle to avoid error if multiple (shouldn't happen)
+
+        if (createError) {
+          console.error("Error creating profile:", createError);
+        } else if (newProfile) {
+          setProfile(newProfile);
+        }
+      }
+    } catch (err) {
+      console.error("Unexpected error in fetchProfile:", err);
     }
   };
 
@@ -47,15 +76,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
-      
+
       if (session?.user) {
         setTimeout(() => {
-          fetchProfile(session.user.id);
+          if (session.user) {
+            fetchProfile(session.user);
+          }
         }, 0);
       } else {
         setProfile(null);
       }
-      
+
       setLoading(false);
     });
 
@@ -63,11 +94,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      
+
       if (session?.user) {
-        fetchProfile(session.user.id);
+        fetchProfile(session.user);
       }
-      
+
       setLoading(false);
     });
 
@@ -76,7 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string, displayName: string) => {
     const redirectUrl = `${window.location.origin}/`;
-    
+
     const { error } = await supabase.auth.signUp({
       email,
       password,

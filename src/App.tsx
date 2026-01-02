@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Traducteurs from "./pages/Traducteurs";
 import Auth from "./pages/Auth";
 import JoinTranslator from "./pages/JoinTranslator";
+import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/traducteurs" element={<Traducteurs />} />
             <Route path="/rejoindre" element={<JoinTranslator />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/admin-dashboard" element={<AdminDashboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
