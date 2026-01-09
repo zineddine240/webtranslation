@@ -81,6 +81,36 @@ export type Database = {
         }
         Relationships: []
       }
+      activation_codes: {
+        Row: {
+          code: string
+          created_at: string
+          duration_days: number | null
+          id: string
+          status: string | null
+          used_at: string | null
+          used_by: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          duration_days?: number | null
+          id?: string
+          status?: string | null
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          duration_days?: number | null
+          id?: string
+          status?: string | null
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Relationships: []
+      }
       translators: {
         Row: {
           accreditation_number: string | null

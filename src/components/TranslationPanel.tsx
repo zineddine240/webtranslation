@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Copy, Download, Trash2, Loader2, ArrowRight, Check, Languages } from "lucide-react";
 import { Client } from "@gradio/client";
 import { jsPDF } from "jspdf";
@@ -18,46 +18,36 @@ const TranslationPanel = ({ frenchText, setFrenchText, onTranslationComplete }: 
   const { toast } = useToast();
   const { user } = useAuth();
 
-  const handleTranslate = useCallback(async () => {
-    if (!frenchText.trim()) {
-      toast({
-        title: "نص فارغ",
-        description: "الرجاء إدخال نص فرنسي للترجمة",
-        variant: "destructive",
-      });
-      return;
-    }
+  // Auto-translation logic
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (!frenchText.trim()) {
+        setArabicText("");
+        return;
+      }
 
-    setIsTranslating(true);
-    setArabicText("");
+      setIsTranslating(true);
 
-    try {
-      const client = await Client.connect("3ltranslate/legaltranslator");
-      const result = await client.predict("/predict", { text: frenchText });
-      
-      const translatedText = result.data as string;
-      setArabicText(translatedText);
-      onTranslationComplete(frenchText, translatedText);
-      
-      toast({
-        title: "تمت الترجمة بنجاح ✓",
-        description: "تم ترجمة النص القانوني بنجاح",
-      });
-    } catch (error) {
-      console.error("Translation error:", error);
-      toast({
-        title: "فشل الترجمة",
-        description: "فشل الاتصال بخدمة الترجمة. يرجى المحاولة مرة أخرى.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsTranslating(false);
-    }
-  }, [frenchText, toast, onTranslationComplete]);
+      try {
+        const client = await Client.connect("3ltranslate/legaltranslator");
+        const result = await client.predict("/predict", { text: frenchText });
+
+        const translatedText = result.data as string;
+        setArabicText(translatedText);
+        onTranslationComplete(frenchText, translatedText);
+      } catch (error) {
+        console.error("Translation error:", error);
+      } finally {
+        setIsTranslating(false);
+      }
+    }, 1000); // 1s debounce
+
+    return () => clearTimeout(timer);
+  }, [frenchText, onTranslationComplete]);
 
   const copyToClipboard = useCallback(async () => {
     if (!arabicText) return;
-    
+
     try {
       await navigator.clipboard.writeText(arabicText);
       setCopied(true);
@@ -79,17 +69,17 @@ const TranslationPanel = ({ frenchText, setFrenchText, onTranslationComplete }: 
     if (!arabicText) return;
 
     const doc = new jsPDF();
-    
+
     // Title with Algerian branding
     doc.setFontSize(20);
     doc.setTextColor(34, 87, 54); // Algerian green
     doc.text("LegTrans DZ - الترجمة القانونية", 105, 20, { align: "center" });
-    
+
     // Decorative line
     doc.setDrawColor(206, 17, 38); // Algerian red
     doc.setLineWidth(0.5);
     doc.line(20, 28, 190, 28);
-    
+
     // French section
     doc.setFontSize(12);
     doc.setTextColor(100, 100, 100);
@@ -98,7 +88,7 @@ const TranslationPanel = ({ frenchText, setFrenchText, onTranslationComplete }: 
     doc.setFontSize(10);
     const frenchLines = doc.splitTextToSize(frenchText, 170);
     doc.text(frenchLines, 20, 55);
-    
+
     // Arabic section
     const arabicY = 55 + frenchLines.length * 5 + 25;
     doc.setFontSize(12);
@@ -108,14 +98,14 @@ const TranslationPanel = ({ frenchText, setFrenchText, onTranslationComplete }: 
     doc.setFontSize(10);
     const arabicLines = doc.splitTextToSize(arabicText, 170);
     doc.text(arabicLines, 20, arabicY + 10);
-    
+
     // Footer
     doc.setFontSize(8);
     doc.setTextColor(150, 150, 150);
     doc.text("© LegTrans DZ - منصة الترجمة القانونية الجزائرية", 105, 285, { align: "center" });
-    
+
     doc.save("legtrans-dz-translation.pdf");
-    
+
     toast({
       title: "تم التحميل",
       description: "تم حفظ الترجمة كملف PDF",
@@ -145,9 +135,18 @@ const TranslationPanel = ({ frenchText, setFrenchText, onTranslationComplete }: 
               <p className="text-xs text-muted-foreground">النص الفرنسي</p>
             </div>
           </div>
-          <span className="text-sm text-muted-foreground px-3 py-1 rounded-full bg-muted/50">
-            {frenchText.length} حرف
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground px-3 py-1 rounded-full bg-muted/50">
+              {frenchText.length} حرف
+            </span>
+            <button
+              onClick={clearAll}
+              className="p-2 rounded-xl hover:bg-destructive/20 transition-all duration-300 group"
+              aria-label="مسح الكل"
+            >
+              <Trash2 className="w-4 h-4 text-muted-foreground group-hover:text-destructive transition-colors" />
+            </button>
+          </div>
         </div>
 
         <textarea
@@ -155,37 +154,10 @@ const TranslationPanel = ({ frenchText, setFrenchText, onTranslationComplete }: 
           onChange={(e) => setFrenchText(e.target.value)}
           placeholder="أدخل النص القانوني الفرنسي هنا...
 Entrez le texte juridique français ici..."
-          className="w-full h-72 glass-input rounded-xl p-4 text-foreground placeholder:text-muted-foreground resize-none focus:outline-none leading-relaxed"
+          className="w-full h-[21.5rem] glass-input rounded-xl p-4 text-foreground placeholder:text-muted-foreground resize-none focus:outline-none leading-relaxed"
         />
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleTranslate}
-            disabled={isTranslating || !frenchText.trim()}
-            className="flex-1 btn-primary py-4 px-6 rounded-xl flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-lg"
-          >
-            {isTranslating ? (
-              <>
-                <Loader2 className="w-6 h-6 animate-spin-slow" />
-                <span>جاري الترجمة...</span>
-              </>
-            ) : (
-              <>
-                <Languages className="w-6 h-6" />
-                <span>ترجم الآن</span>
-                <ArrowRight className="w-5 h-5" />
-              </>
-            )}
-          </button>
 
-          <button
-            onClick={clearAll}
-            className="p-4 rounded-xl glass-card hover:bg-destructive/20 transition-all duration-300 group"
-            aria-label="مسح الكل"
-          >
-            <Trash2 className="w-5 h-5 text-muted-foreground group-hover:text-destructive transition-colors" />
-          </button>
-        </div>
       </div>
 
       {/* Arabic Output Panel */}

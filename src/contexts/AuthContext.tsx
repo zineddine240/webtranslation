@@ -10,6 +10,7 @@ interface Profile {
   profession: string | null;
   preferred_language: string;
   is_admin?: boolean;
+  subscription_expires_at?: string | null;
 }
 
 interface AuthContextType {
@@ -35,7 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("*, is_admin")
+        .select("*, is_admin, subscription_expires_at")
         .eq("user_id", currentUser.id)
         .maybeSingle();
 
@@ -45,7 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (data) {
-        setProfile(data);
+        setProfile(data as unknown as Profile);
       } else {
         // Profile doesn't exist, create it
         console.log("Profile missing, creating new profile for:", currentUser.id);

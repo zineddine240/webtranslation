@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Users, FileText, CheckCircle, XCircle, ShieldCheck, Trash2 } from "lucide-react";
+import { Loader2, Users, FileText, CheckCircle, XCircle, ShieldCheck, Trash2, Copy, Plus, Key } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import Header from "@/components/Header";
 import {
     Table,
@@ -25,6 +26,7 @@ const AdminDashboard = () => {
     const [loading, setLoading] = useState(true);
     const [profiles, setProfiles] = useState<any[]>([]);
     const [translators, setTranslators] = useState<any[]>([]);
+    const [codes, setCodes] = useState<any[]>([]);
 
     useEffect(() => {
         if (!authLoading) {
@@ -64,8 +66,11 @@ const AdminDashboard = () => {
                 .select('*')
                 .order('created_at', { ascending: false });
 
-            if (profilesError) throw profilesError;
-            setProfiles(profilesData || []);
+            if (profilesError) {
+                console.error("Profiles Error:", profilesError);
+            } else {
+                setProfiles(profilesData || []);
+            }
 
             // Fetch Translators
             const { data: translatorsData, error: translatorsError } = await supabase
@@ -73,8 +78,24 @@ const AdminDashboard = () => {
                 .select('*')
                 .order('created_at', { ascending: false });
 
-            if (translatorsError) throw translatorsError;
-            setTranslators(translatorsData || []);
+            if (translatorsError) {
+                console.error("Translators Error:", translatorsError);
+            } else {
+                setTranslators(translatorsData || []);
+            }
+
+            // Fetch Codes
+            const { data: codesData, error: codesError } = await supabase
+                .from('activation_codes')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (codesError) {
+                console.error("Codes Error:", codesError);
+                // Don't throw here, just log, so page loads partially at least
+            } else {
+                setCodes(codesData || []);
+            }
 
         } catch (error: any) {
             console.error("Error fetching admin data:", error);
@@ -151,6 +172,50 @@ const AdminDashboard = () => {
         }
     };
 
+    const generateCode = async () => {
+        const randomStr = "LXT-" + Math.random().toString(36).substring(2, 6).toUpperCase() + "-" + Math.random().toString(36).substring(2, 6).toUpperCase();
+
+        const { data, error } = await supabase.from('activation_codes').insert({
+            code: randomStr,
+            duration_days: 30
+        }).select().single();
+
+        if (error) {
+            toast({ title: "Erreur", description: error.message, variant: "destructive" });
+        } else {
+            setCodes([data, ...codes]);
+            toast({ title: "Code généré", description: `Code: ${randomStr}` });
+        }
+    };
+
+    const copyCode = (code: string) => {
+        navigator.clipboard.writeText(code);
+        toast({ title: "Copié !", description: "Le code a été copié dans le presse-papier." });
+    };
+
+    const handleGenerateUserCode = async (userEmail: string) => {
+        // Generate a code linked to the user's name/email
+        const randomStr = "LXT-" + Math.random().toString(36).substring(2, 6).toUpperCase() + "-" + Math.random().toString(36).substring(2, 6).toUpperCase();
+
+        // Use the secure RPC that invalidates old codes for this email automatically
+        const { data, error } = await supabase.rpc('generate_and_reserve_code', {
+            new_code_str: randomStr,
+            target_email: userEmail,
+            duration_days_input: 30
+        });
+
+        if (error) {
+            toast({ title: "Erreur", description: error.message, variant: "destructive" });
+        } else {
+            // Show the code immediately to the admin
+            window.prompt(`Code généré pour ${userEmail} \n(Les anciens codes de cet utilisateur ont été désactivés)\n\nCopiez ce code :`, randomStr);
+            toast({ title: "Nouveau Code généré", description: `Code créé pour ${userEmail}` });
+
+            // Refresh the codes list to see changes
+            fetchData();
+        }
+    };
+
     if (authLoading || loading) {
         return (
             <div className="min-h-screen flex items-center justify-center algerian-pattern">
@@ -182,9 +247,10 @@ const AdminDashboard = () => {
                     </div>
 
                     <Tabs defaultValue="translators" className="w-full">
-                        <TabsList className="grid w-full grid-cols-2 max-w-[400px] mb-8 glass-card p-1">
+                        <TabsList className="grid w-full grid-cols-3 max-w-[600px] mb-8 glass-card p-1">
                             <TabsTrigger value="translators" className="data-[state=active]:bg-primary/20">Candidatures ({translators.length})</TabsTrigger>
                             <TabsTrigger value="users" className="data-[state=active]:bg-primary/20">Utilisateurs ({profiles.length})</TabsTrigger>
+                            <TabsTrigger value="codes" className="data-[state=active]:bg-primary/20">Codes d'Activation</TabsTrigger>
                         </TabsList>
 
                         <TabsContent value="translators" className="animate-slide-up">
@@ -265,47 +331,130 @@ const AdminDashboard = () => {
                                             <TableHeader className="bg-white/5">
                                                 <TableRow className="hover:bg-transparent border-white/10">
                                                     <TableHead className="text-primary">Nom d'affichage</TableHead>
-                                                    <TableHead className="text-primary">Date d'inscription</TableHead>
+                                                    <TableHead className="text-primary">Nom</TableHead>
+                                                    <TableHead className="text-primary">Email</TableHead>
+                                                    <TableHead className="text-primary">Abonnement</TableHead>
                                                     <TableHead className="text-right text-primary">Actions</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
                                                 {profiles.length === 0 ? (
                                                     <TableRow>
-                                                        <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">Aucun utilisateur trouvé.</TableCell>
+                                                        <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">Aucun utilisateur trouvé.</TableCell>
                                                     </TableRow>
                                                 ) : (
-                                                    profiles.map((profile) => (
-                                                        <TableRow key={profile.id} className="hover:bg-white/5 border-white/10 transition-colors">
-                                                            <TableCell className="font-medium">
-                                                                <div className="flex items-center gap-3">
-                                                                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
-                                                                        {profile.display_name?.charAt(0).toUpperCase() || <User className="w-4 h-4" />}
-                                                                    </div>
-                                                                    <div className="flex flex-col">
+                                                    profiles.map((profile) => {
+                                                        const isExpired = !profile.subscription_expires_at || new Date(profile.subscription_expires_at) < new Date();
+                                                        const expiresDate = profile.subscription_expires_at ? new Date(profile.subscription_expires_at).toLocaleDateString() : null;
+
+                                                        return (
+                                                            <TableRow key={profile.id} className="hover:bg-white/5 border-white/10 transition-colors">
+                                                                <TableCell className="font-medium">
+                                                                    <div className="flex items-center gap-3">
+                                                                        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
+                                                                            {profile.display_name?.charAt(0).toUpperCase() || <Users className="w-4 h-4" />}
+                                                                        </div>
                                                                         <span>{profile.display_name || "Utilisateur Anonyme"}</span>
-                                                                        <span className="text-xs text-muted-foreground">{profile.email}</span>
                                                                     </div>
-                                                                </div>
+                                                                </TableCell>
+                                                                <TableCell className="text-muted-foreground">{profile.email}</TableCell>
+                                                                <TableCell>
+                                                                    {isExpired ? (
+                                                                        <Badge variant="outline" className="border-red-500/50 text-red-400 bg-red-500/10">
+                                                                            Inactif
+                                                                        </Badge>
+                                                                    ) : (
+                                                                        <Badge variant="outline" className="border-green-500/50 text-green-400 bg-green-500/10">
+                                                                            Actif (Jusqu'au {expiresDate})
+                                                                        </Badge>
+                                                                    )}
+                                                                </TableCell>
+                                                                <TableCell className="text-right flex items-center justify-end gap-2">
+                                                                    {isExpired && (
+                                                                        <Button
+                                                                            size="sm"
+                                                                            variant="outline"
+                                                                            className="h-8 border-primary/50 text-primary hover:bg-primary/20 hover:text-white"
+                                                                            onClick={() => handleGenerateUserCode(profile.email || profile.display_name)}
+                                                                        >
+                                                                            <Key className="w-3 h-3 mr-1" /> Code
+                                                                        </Button>
+                                                                    )}
+                                                                    <Button
+                                                                        size="icon"
+                                                                        variant="ghost"
+                                                                        className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-500/20"
+                                                                        onClick={() => handleDeleteUser(profile.user_id)}
+                                                                    >
+                                                                        <Trash2 className="w-4 h-4" />
+                                                                    </Button>
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        );
+                                                    })
+                                                )}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+
+                        <TabsContent value="codes" className="animate-slide-up">
+                            <Card className="glass-card border-none">
+                                <CardHeader>
+                                    <CardTitle>Codes d'Activation</CardTitle>
+                                    <CardDescription>Générez et gérez les codes d'activation pour les abonnements.</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="flex justify-end items-center mb-6">
+                                        <Button onClick={generateCode} className="gap-2">
+                                            <Plus className="w-4 h-4" /> Générer Code (1 Mois)
+                                        </Button>
+                                    </div>
+
+                                    <div className="rounded-md border border-white/10 overflow-hidden">
+                                        <Table>
+                                            <TableHeader className="bg-white/5">
+                                                <TableRow className="hover:bg-transparent border-white/10">
+                                                    <TableHead className="text-primary">Code</TableHead>
+                                                    <TableHead className="text-primary">Réservé pour</TableHead>
+                                                    <TableHead className="text-primary">Statut</TableHead>
+                                                    <TableHead className="text-primary">Créé le</TableHead>
+                                                    <TableHead className="text-right text-primary">Action</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {codes.length === 0 ? (
+                                                    <TableRow>
+                                                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Aucun code trouvé.</TableCell>
+                                                    </TableRow>
+                                                ) : (
+                                                    codes.map((code) => (
+                                                        <TableRow key={code.id} className="hover:bg-white/5 border-white/10">
+                                                            <TableCell className="font-mono text-lg tracking-wider">{code.code}</TableCell>
+                                                            <TableCell className="text-muted-foreground text-sm">
+                                                                {code.reserved_for_email || "-"}
                                                             </TableCell>
-                                                            <TableCell className="text-muted-foreground">
-                                                                {new Date(profile.created_at).toLocaleDateString('fr-FR', {
-                                                                    year: 'numeric',
-                                                                    month: 'long',
-                                                                    day: 'numeric'
-                                                                })}
+                                                            <TableCell>
+                                                                <span className={`px-2 py-1 rounded-full text-xs ${code.status === 'active' ? 'bg-green-500/20 text-green-400' :
+                                                                        code.status === 'used' ? 'bg-blue-500/20 text-blue-400' :
+                                                                            'bg-red-500/20 text-red-400'
+                                                                    }`}>
+                                                                    {code.status === 'active' ? 'Actif' : code.status === 'used' ? 'Utilisé' : 'Expiré'}
+                                                                </span>
                                                             </TableCell>
+                                                            <TableCell className="text-muted-foreground">{new Date(code.created_at).toLocaleDateString()}</TableCell>
                                                             <TableCell className="text-right">
-                                                                <button
-                                                                    onClick={() => handleDeleteUser(profile.user_id)}
-                                                                    className="p-2 rounded-full text-red-500 hover:bg-red-500/10 transition-colors"
-                                                                    title="Supprimer l'utilisateur"
-                                                                >
-                                                                    <Trash2 className="w-5 h-5" />
-                                                                </button>
+                                                                {code.status === 'active' && (
+                                                                    <Button variant="ghost" size="sm" onClick={() => copyCode(code.code)}>
+                                                                        <Copy className="w-4 h-4" />
+                                                                    </Button>
+                                                                )}
                                                             </TableCell>
                                                         </TableRow>
-                                                    )))}
+                                                    ))
+                                                )}
                                             </TableBody>
                                         </Table>
                                     </div>
@@ -320,3 +469,4 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+
