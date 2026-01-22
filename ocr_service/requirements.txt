@@ -4,3 +4,4 @@ google-cloud-aiplatform
 python-dotenv
 google-auth
 vertexai
+gunicorn

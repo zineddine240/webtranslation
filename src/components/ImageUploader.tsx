@@ -164,7 +164,8 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
 
     try {
       console.log("Sending to local server...");
-      const response = await fetch("http://127.0.0.1:5000/scan", {
+      const apiUrl = import.meta.env.VITE_API_URL || "http://127.0.0.1:5000";
+      const response = await fetch(`${apiUrl}/scan`, {
         method: "POST",
         body: formData
       });
