@@ -1,0 +1,415 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Tajawal:wght@300;400;500;700;800;900&family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+@layer base {
+  :root {
+    /* Modern Algerian Colors - Green, White, Red with modern twist */
+    --background: 150 30% 6%;
+    --foreground: 0 0% 98%;
+
+    --card: 150 25% 10%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 150 25% 8%;
+    --popover-foreground: 0 0% 98%;
+
+    /* Algerian Green - Primary */
+    --primary: 145 60% 35%;
+    --primary-foreground: 0 0% 98%;
+
+    /* Algerian Red - Secondary/Accent */
+    --secondary: 0 70% 50%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 150 20% 15%;
+    --muted-foreground: 150 10% 60%;
+
+    /* Gold accent for premium feel */
+    --accent: 45 90% 55%;
+    --accent-foreground: 0 0% 10%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --success: 145 60% 40%;
+    --success-foreground: 0 0% 98%;
+
+    --border: 150 20% 20%;
+    --input: 150 20% 15%;
+    --ring: 145 60% 35%;
+
+    --radius: 1rem;
+
+    /* Algerian-inspired gradients */
+    --gradient-bg: linear-gradient(145deg, hsl(150, 30%, 5%) 0%, hsl(150, 25%, 8%) 50%, hsl(0, 15%, 8%) 100%);
+    --gradient-card: linear-gradient(135deg, hsl(150, 25%, 12%, 0.9) 0%, hsl(150, 20%, 8%, 0.8) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(145, 60%, 35%) 0%, hsl(145, 50%, 25%) 100%);
+    --gradient-gold: linear-gradient(135deg, hsl(45, 90%, 55%) 0%, hsl(35, 85%, 45%) 100%);
+    --gradient-hero: linear-gradient(180deg, hsl(145, 60%, 35%, 0.15) 0%, transparent 50%);
+
+    /* Glass effect */
+    --glass-bg: hsl(150, 25%, 10%, 0.7);
+    --glass-border: hsl(150, 20%, 25%, 0.5);
+    --glass-shadow: 0 8px 32px hsl(0, 0%, 0%, 0.4);
+
+    --sidebar-background: 150 25% 8%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 145 60% 35%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 150 20% 15%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 150 20% 20%;
+    --sidebar-ring: 145 60% 35%;
+  }
+
+  .light {
+    --background: 0 0% 98%;
+    --foreground: 150 30% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 150 30% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 150 30% 10%;
+
+    --primary: 145 55% 30%;
+    --primary-foreground: 0 0% 98%;
+
+    --secondary: 0 65% 45%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 150 15% 95%;
+    --muted-foreground: 150 15% 40%;
+
+    --accent: 45 85% 50%;
+    --accent-foreground: 0 0% 10%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --success: 145 55% 35%;
+    --success-foreground: 0 0% 98%;
+
+    --border: 150 15% 88%;
+    --input: 150 15% 92%;
+    --ring: 145 55% 30%;
+
+    --gradient-bg: linear-gradient(145deg, hsl(0, 0%, 98%) 0%, hsl(150, 20%, 96%) 100%);
+    --gradient-card: linear-gradient(135deg, hsl(0, 0%, 100%, 0.95) 0%, hsl(150, 15%, 98%, 0.9) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(145, 55%, 35%) 0%, hsl(145, 50%, 25%) 100%);
+    --gradient-gold: linear-gradient(135deg, hsl(45, 85%, 55%) 0%, hsl(35, 80%, 45%) 100%);
+    --gradient-hero: linear-gradient(180deg, hsl(145, 55%, 35%, 0.08) 0%, transparent 50%);
+
+    --glass-bg: hsl(0, 0%, 100%, 0.8);
+    --glass-border: hsl(150, 15%, 85%, 0.6);
+    --glass-shadow: 0 8px 32px hsl(0, 0%, 0%, 0.08);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Poppins', system-ui, sans-serif;
+    background: var(--gradient-bg);
+    min-height: 100vh;
+  }
+
+  /* Arabic text styling with Algerian-appropriate font */
+  .arabic-text {
+    font-family: 'Tajawal', 'Cairo', 'Arial', sans-serif;
+    direction: rtl;
+    text-align: right;
+    line-height: 2;
+  }
+
+  .font-display {
+    font-family: 'Cairo', 'Poppins', sans-serif;
+  }
+
+  /* Professional Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 999px;
+    transition: background 0.3s ease;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary) / 0.6);
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  /* Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+  }
+}
+
+@layer components {
+  .glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+  }
+
+  .glass-input {
+    background: hsl(var(--muted) / 0.5);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    transition: all 0.3s ease;
+  }
+
+  .glass-input:focus {
+    border-color: hsl(var(--primary));
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
+  }
+
+  .gradient-text {
+    background: var(--gradient-accent);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .gradient-text-gold {
+    background: var(--gradient-gold);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .algerian-pattern {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .algerian-pattern::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image:
+      radial-gradient(circle at 20% 80%, hsl(145, 60%, 35%, 0.08) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, hsl(0, 70%, 50%, 0.05) 0%, transparent 50%),
+      radial-gradient(circle at 50% 50%, hsl(45, 90%, 55%, 0.03) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .btn-primary {
+    background: var(--gradient-accent);
+    color: hsl(var(--foreground));
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 20px hsl(var(--primary) / 0.4);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px hsl(var(--primary) / 0.5);
+  }
+
+  .btn-primary:active {
+    transform: translateY(0);
+  }
+
+  .btn-secondary {
+    background: transparent;
+    border: 2px solid hsl(var(--primary));
+    color: hsl(var(--primary));
+    font-weight: 600;
+    transition: all 0.3s ease;
+  }
+
+  .btn-secondary:hover {
+    background: hsl(var(--primary) / 0.1);
+    transform: translateY(-2px);
+  }
+
+  .btn-gold {
+    background: var(--gradient-gold);
+    color: hsl(0, 0%, 10%);
+    font-weight: 700;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 20px hsl(45, 90%, 55%, 0.3);
+  }
+
+  .btn-gold:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px hsl(45, 90%, 55%, 0.4);
+  }
+
+  .drop-zone {
+    border: 2px dashed hsl(var(--border));
+    background: hsl(var(--muted) / 0.3);
+    transition: all 0.3s ease;
+  }
+
+  .drop-zone:hover,
+  .drop-zone.dragging {
+    border-color: hsl(var(--primary));
+    background: hsl(var(--primary) / 0.1);
+  }
+
+  .skeleton-shimmer {
+    background: linear-gradient(90deg,
+        hsl(var(--muted)) 0%,
+        hsl(var(--muted-foreground) / 0.1) 50%,
+        hsl(var(--muted)) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
+  /* Star decoration for Algerian flag theme */
+  .star-decoration::after {
+    content: '★';
+    color: hsl(var(--secondary));
+    font-size: 0.75em;
+    margin-left: 0.5em;
+  }
+
+  .crescent-glow {
+    position: relative;
+  }
+
+  .crescent-glow::before {
+    content: '';
+    position: absolute;
+    inset: -20%;
+    background: radial-gradient(ellipse at center, hsl(var(--primary) / 0.2) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: -1;
+  }
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.5s ease-out forwards;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.3s ease-out forwards;
+  }
+
+  .animate-pulse-soft {
+    animation: pulseSoft 2s ease-in-out infinite;
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulseSoft {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin 1.5s linear infinite;
+}
