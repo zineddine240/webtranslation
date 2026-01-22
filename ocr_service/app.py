@@ -9,8 +9,13 @@ app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 # --- CONFIGURATION VERTEX AI ---
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "credentials.json"
-PROJECT_ID = "rational-lambda-485021-e9"
+# --- CONFIGURATION VERTEX AI ---
+from dotenv import load_dotenv
+from google.oauth2 import service_account
+
+load_dotenv()
+
+PROJECT_ID = os.getenv("GOOGLE_PROJECT_ID")
 LOCATION = "us-central1"
 
 print(f"--- Initialisation Vertex AI ({PROJECT_ID}) ---")
@@ -18,7 +23,27 @@ print(f"--- Initialisation Vertex AI ({PROJECT_ID}) ---")
 model = None
 
 try:
-    vertexai.init(project=PROJECT_ID, location=LOCATION)
+    # Reconstitution des identifiants depuis les variables d'environnement
+    private_key = os.getenv("GOOGLE_PRIVATE_KEY")
+    if private_key:
+        private_key = private_key.replace('\\n', '\n')
+
+    credentials_info = {
+        "type": "service_account",
+        "project_id": PROJECT_ID,
+        "private_key_id": os.getenv("GOOGLE_PRIVATE_KEY_ID"),
+        "private_key": private_key,
+        "client_email": os.getenv("GOOGLE_CLIENT_EMAIL"),
+        "client_id": os.getenv("GOOGLE_CLIENT_ID"),
+        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+        "token_uri": "https://oauth2.googleapis.com/token",
+        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+        "client_x509_cert_url": f"https://www.googleapis.com/robot/v1/metadata/x509/{os.getenv('GOOGLE_CLIENT_EMAIL').replace('@', '%40')}",
+        "universe_domain": "googleapis.com"
+    }
+    
+    creds = service_account.Credentials.from_service_account_info(credentials_info)
+    vertexai.init(project=PROJECT_ID, location=LOCATION, credentials=creds)
     
     # MODIFICATION ICI : Utilisation du nom générique plus stable
     # Si 'gemini-1.5-flash' échoue, essayez 'gemini-1.0-pro-vision'
