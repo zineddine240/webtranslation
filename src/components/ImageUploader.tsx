@@ -1,11 +1,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { Upload, Image, FileText, X, Loader2, Key, Sparkles, Send, Edit3, Eye, SlidersHorizontal, RotateCcw } from "lucide-react";
-<<<<<<< HEAD
-// GoogleGenerativeAI import removed
-=======
-import { GoogleGenerativeAI } from "@google/generative-ai";
->>>>>>> 131a70cbaa3a94b6e078bd98cb009accb6948555
+import { Upload, FileText, X, Loader2, Sparkles, Send, Edit3, SlidersHorizontal, RotateCcw } from "lucide-react";
+
 import { useToast } from "@/hooks/use-toast";
 
 interface ImageUploaderProps {
@@ -17,12 +13,7 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-<<<<<<< HEAD
   // API Key state removed
-=======
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem("gemini_api_key") || "");
-  const [showApiKeyInput, setShowApiKeyInput] = useState(!apiKey);
->>>>>>> 131a70cbaa3a94b6e078bd98cb009accb6948555
   const [ocrResult, setOcrResult] = useState("");
   const [showOcrPanel, setShowOcrPanel] = useState(false);
   const [contrast, setContrast] = useState(1.0);
@@ -134,38 +125,7 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
     setContrast(1.0);
   }, []);
 
-<<<<<<< HEAD
 
-=======
-  const saveApiKey = useCallback(() => {
-    if (apiKey.trim()) {
-      localStorage.setItem("gemini_api_key", apiKey.trim());
-      setShowApiKeyInput(false);
-      toast({
-        title: "تم حفظ المفتاح",
-        description: "تم حفظ مفتاح Gemini API بنجاح",
-      });
-    }
-  }, [apiKey, toast]);
->>>>>>> 131a70cbaa3a94b6e078bd98cb009accb6948555
-
-  // Helper function to delay execution
-  const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-<<<<<<< HEAD
-
-=======
-  // Models to try in order (fallback mechanism)
-  // IMPORTANT: Do NOT use "models/" prefix - the SDK adds it automatically
-  // 
-  // Available models on free tier (Dec 2024):
-  // - gemini-2.0-flash: Fast, multimodal, good for OCR
-  // - gemini-2.0-flash-lite: Ultra-efficient, lower latency
-  // - gemini-1.5-flash may be deprecated, try 2.0 versions first
-  const MODELS_TO_TRY = [
-    "gemini-3-flash-preview",
-  ];
->>>>>>> 131a70cbaa3a94b6e078bd98cb009accb6948555
 
   // Load image for preview only (no OCR)
   const loadImage = useCallback((file: File) => {
@@ -184,11 +144,7 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
     previewReader.readAsDataURL(file);
   }, []);
 
-<<<<<<< HEAD
   // Run OCR on the current image using local Python backend
-=======
-  // Run OCR on the current image (called when button is clicked)
->>>>>>> 131a70cbaa3a94b6e078bd98cb009accb6948555
   const runOCR = useCallback(async () => {
     if (!uploadedFile) {
       toast({
@@ -199,7 +155,6 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
       return;
     }
 
-<<<<<<< HEAD
     setIsProcessing(true);
     setOcrResult("");
 
@@ -219,115 +174,11 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
       if (data.success) {
         console.log("Success!");
         setOcrResult(data.text);
-=======
-    const storedKey = localStorage.getItem("gemini_api_key");
-    if (!storedKey) {
-      setShowApiKeyInput(true);
-      toast({
-        title: "مفتاح API مطلوب",
-        description: "الرجاء إدخال مفتاح Google Gemini API لاستخدام التعرف الضوئي",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsProcessing(true);
-    setOcrResult("");
-
-    try {
-      const genAI = new GoogleGenerativeAI(storedKey);
-
-      const reader = new FileReader();
-      const base64Data = await new Promise<string>((resolve, reject) => {
-        reader.onload = () => {
-          const result = reader.result as string;
-          const base64 = result.split(",")[1];
-          resolve(base64);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(uploadedFile);
-      });
-
-      // Apply contrast to image before OCR if contrast is adjusted
-      let finalBase64 = base64Data;
-      if (contrast !== 1.0 && originalImageData) {
-        try {
-          const adjustedDataUrl = await applyContrastToImage(originalImageData, contrast);
-          finalBase64 = adjustedDataUrl.split(',')[1];
-        } catch (err) {
-          console.warn('Failed to apply contrast for OCR, using original:', err);
-        }
-      }
-
-      const imagePart = {
-        inlineData: {
-          data: finalBase64,
-          mimeType: uploadedFile.type,
-        },
-      };
-
-      // Simple prompt for OCR
-      const prompt = "extract all text from image without any comments and explanations";
-
-      let extractedText = "";
-      let lastError: any = null; // eslint-disable-line @typescript-eslint/no-explicit-any
-      const MAX_RETRIES = 3;
-
-      // Try each model with retries
-      for (const modelName of MODELS_TO_TRY) {
-        console.log(`Trying model: ${modelName}`);
-
-        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-          try {
-            const model = genAI.getGenerativeModel({ model: modelName });
-            const result = await model.generateContent([prompt, imagePart]);
-            const response = await result.response;
-            extractedText = response.text();
-
-            if (extractedText && extractedText.trim()) {
-              console.log(`Success with model: ${modelName} on attempt ${attempt}`);
-              break;
-            }
-          } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
-            lastError = err;
-            const errStr = err?.message || err?.toString() || "";
-            console.log(`Attempt ${attempt} with ${modelName} failed:`, errStr);
-
-            // If it's a rate limit error, wait before retrying
-            if (errStr.includes("429") || errStr.includes("RESOURCE_EXHAUSTED") || errStr.includes("quota") || errStr.includes("rate")) {
-              const waitTime = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s
-              console.log(`Rate limited. Waiting ${waitTime}ms before retry...`);
-              toast({
-                title: `جاري إعادة المحاولة (${attempt}/${MAX_RETRIES})`,
-                description: `انتظار ${waitTime / 1000} ثواني...`,
-              });
-              await delay(waitTime);
-            } else if (errStr.includes("404") || errStr.includes("not found") || errStr.includes("NOT_FOUND")) {
-              // Model not found, try next model immediately
-              console.log(`Model ${modelName} not found, trying next...`);
-              break;
-            } else {
-              // Other error, don't retry
-              throw err;
-            }
-          }
-        }
-
-        // If we got text, break the outer loop
-        if (extractedText && extractedText.trim()) {
-          break;
-        }
-      }
-
-      if (extractedText && extractedText.trim()) {
-        setOcrResult(extractedText);
->>>>>>> 131a70cbaa3a94b6e078bd98cb009accb6948555
         setShowOcrPanel(true);
         toast({
           title: "تم استخراج النص بنجاح ✓",
           description: "يمكنك تعديل النص قبل إرساله للترجمة",
         });
-<<<<<<< HEAD
       } else {
         throw new Error(data.error || "Unknown server error");
       }
@@ -337,65 +188,12 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
       toast({
         title: "فشل الاتصال",
         description: "تعذر الاتصال بالخادم المحلي (Python). تأكد من تشغيله.",
-=======
-      } else if (lastError) {
-        throw lastError;
-      } else {
-        toast({
-          title: "لم يتم العثور على نص",
-          description: "لم يتم الكشف عن أي نص في الصورة المرفوعة",
-          variant: "destructive",
-        });
-      }
-    } catch (error: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
-      console.error("OCR error:", error);
-      console.error("Full error details:", JSON.stringify(error, null, 2));
-
-      // Better error messages
-      let errorMessage = "فشل في استخراج النص من الصورة.";
-      const errorStr = error?.message || error?.toString() || "";
-      const errorStatus = error?.status || error?.response?.status || "";
-
-      console.log("Error string:", errorStr);
-      console.log("Error status:", errorStatus);
-
-      if (errorStr.includes("API_KEY_INVALID") || errorStr.includes("API key not valid") || errorStr.includes("invalid")) {
-        errorMessage = "مفتاح API غير صالح. تحقق من المفتاح وحاول مرة أخرى.";
-        localStorage.removeItem("gemini_api_key");
-        setShowApiKeyInput(true);
-        setApiKey("");
-      } else if (errorStr.includes("403") || errorStr.includes("PERMISSION_DENIED")) {
-        errorMessage = "مفتاح API ليس لديه صلاحية. تأكد من تفعيل Gemini API في Google Cloud Console.";
-        localStorage.removeItem("gemini_api_key");
-        setShowApiKeyInput(true);
-        setApiKey("");
-      } else if (errorStr.includes("404") || errorStr.includes("not found") || errorStr.includes("NOT_FOUND")) {
-        errorMessage = "جميع النماذج غير متوفرة حالياً. حاول مرة أخرى لاحقاً.";
-      } else if (errorStr.includes("429") || errorStr.includes("RESOURCE_EXHAUSTED") || errorStr.includes("quota") || errorStr.includes("rate")) {
-        errorMessage = "تم تجاوز حد الاستخدام بعد عدة محاولات. انتظر بضع دقائق وحاول مرة أخرى.";
-      } else if (errorStr.includes("network") || errorStr.includes("fetch") || errorStr.includes("Failed to fetch") || errorStr.includes("ENOTFOUND")) {
-        errorMessage = "خطأ في الاتصال. تحقق من اتصالك بالإنترنت.";
-      } else if (errorStr.includes("SAFETY") || errorStr.includes("blocked")) {
-        errorMessage = "تم حظر المحتوى لأسباب تتعلق بالسلامة. جرب صورة أخرى.";
-      } else {
-        // Show actual error for debugging
-        errorMessage = `خطأ: ${errorStr.substring(0, 100)}`;
-      }
-
-      toast({
-        title: "فشل التعرف الضوئي",
-        description: errorMessage,
->>>>>>> 131a70cbaa3a94b6e078bd98cb009accb6948555
         variant: "destructive",
       });
     } finally {
       setIsProcessing(false);
     }
-<<<<<<< HEAD
   }, [uploadedFile, toast]);
-=======
-  }, [uploadedFile, contrast, originalImageData, applyContrastToImage, delay, toast]);
->>>>>>> 131a70cbaa3a94b6e078bd98cb009accb6948555
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -456,56 +254,7 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
 
   return (
     <div className="space-y-6">
-<<<<<<< HEAD
 
-=======
-      {/* API Key Section - Collapsible */}
-      {showApiKeyInput && (
-        <div className="glass-card rounded-2xl p-6 animate-slide-up">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-secondary/30 to-secondary/10 flex items-center justify-center">
-              <Key className="w-5 h-5 text-secondary" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-foreground">إعدادات API</h2>
-              <p className="text-xs text-muted-foreground">Configuration API</p>
-            </div>
-          </div>
-          <div className="glass-input rounded-xl p-4 space-y-3 border-2 border-primary/20">
-            <p className="text-sm text-muted-foreground text-right">
-              أدخل مفتاح Google Gemini API لتفعيل ميزة التعرف الضوئي على النصوص
-            </p>
-            <div className="flex gap-3">
-              <input
-                type="password"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder="أدخل مفتاح Gemini API..."
-                className="flex-1 bg-muted/50 rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                dir="ltr"
-              />
-              <button
-                onClick={saveApiKey}
-                className="btn-primary px-6 py-3 rounded-xl text-sm font-semibold"
-              >
-                حفظ
-              </button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              احصل على مفتاح API من{" "}
-              <a
-                href="https://makersuite.google.com/app/apikey"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary hover:underline font-medium"
-              >
-                Google AI Studio ←
-              </a>
-            </p>
-          </div>
-        </div>
-      )}
->>>>>>> 131a70cbaa3a94b6e078bd98cb009accb6948555
 
       {/* Two-Panel Layout: Image Upload + OCR Result (Always visible like Translation Panel) */}
       <div className="grid lg:grid-cols-2 gap-6 animate-slide-up" style={{ animationDelay: "0.2s" }}>
@@ -522,27 +271,19 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-<<<<<<< HEAD
-=======
-              <button
-                onClick={() => setShowApiKeyInput(!showApiKeyInput)}
-                className={`p-2.5 rounded-xl transition-all duration-300 ${showApiKeyInput ? "bg-primary/20" : "hover:bg-primary/20"
-                  }`}
-                aria-label="إعدادات API"
-              >
-                <Key className={`w-5 h-5 ${showApiKeyInput ? "text-primary" : "text-muted-foreground hover:text-primary"}`} />
-              </button>
->>>>>>> 131a70cbaa3a94b6e078bd98cb009accb6948555
-              {uploadedFile && (
-                <span className="text-sm text-muted-foreground px-3 py-1 rounded-full bg-muted/50">
-                  {(uploadedFile.size / 1024).toFixed(1)} KB
-                </span>
-              )}
-            </div>
-          </div>
+
+              {
+                uploadedFile && (
+                  <span className="text-sm text-muted-foreground px-3 py-1 rounded-full bg-muted/50">
+                    {(uploadedFile.size / 1024).toFixed(1)} KB
+                  </span>
+                )
+              }
+            </div >
+          </div >
 
           {/* Upload/Preview Area */}
-          <div
+          < div
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
@@ -558,109 +299,113 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
               className="hidden"
             />
 
-            {isProcessing ? (
-              <div className="flex flex-col items-center gap-4">
-                <div className="relative">
-                  <Loader2 className="w-16 h-16 text-primary animate-spin-slow" />
-                  <Sparkles className="w-6 h-6 text-accent absolute -top-2 -right-2 animate-pulse" />
+            {
+              isProcessing ? (
+                <div className="flex flex-col items-center gap-4">
+                  <div className="relative">
+                    <Loader2 className="w-16 h-16 text-primary animate-spin-slow" />
+                    <Sparkles className="w-6 h-6 text-accent absolute -top-2 -right-2 animate-pulse" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-foreground font-medium">جاري استخراج النص...</p>
+                    <p className="text-sm text-muted-foreground">Extraction en cours...</p>
+                  </div>
                 </div>
-                <div className="text-center">
-                  <p className="text-foreground font-medium">جاري استخراج النص...</p>
-                  <p className="text-sm text-muted-foreground">Extraction en cours...</p>
-                </div>
-              </div>
-            ) : imagePreview ? (
-              <div
-                className="relative w-full h-full flex items-center justify-center overflow-hidden bg-black/5 rounded-lg border border-border/50"
-                onWheel={handleWheel}
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
-              >
-                <img
-                  ref={imageRef}
-                  src={imagePreview}
-                  alt="Preview"
-                  className="max-w-full max-h-full object-contain transition-transform duration-75 ease-linear"
-                  style={{
-                    transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-                    cursor: zoom > 1 ? (isDraggingImage ? "grabbing" : "grab") : "default",
-                    imageRendering: "auto"
-                  }}
-                  draggable={false}
-                />
+              ) : imagePreview ? (
+                <div
+                  className="relative w-full h-full flex items-center justify-center overflow-hidden bg-black/5 rounded-lg border border-border/50"
+                  onWheel={handleWheel}
+                  onMouseDown={handleMouseDown}
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={handleMouseUp}
+                  onMouseLeave={handleMouseUp}
+                >
+                  <img
+                    ref={imageRef}
+                    src={imagePreview}
+                    alt="Preview"
+                    className="max-w-full max-h-full object-contain transition-transform duration-75 ease-linear"
+                    style={{
+                      transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+                      cursor: zoom > 1 ? (isDraggingImage ? "grabbing" : "grab") : "default",
+                      imageRendering: "auto"
+                    }}
+                    draggable={false}
+                  />
 
-                {zoom > 1 && (
-                  <button
-                    onClick={handleResetZoom}
-                    className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-md hover:bg-black/70 transition-colors text-xs backdrop-blur-sm z-10"
-                  >
-                    Reset Zoom
-                  </button>
-                )}
-
-                <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/50 text-white rounded text-xs backdrop-blur-sm pointer-events-none">
-                  {Math.round(zoom * 100)}%
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center gap-4">
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/10 flex items-center justify-center">
-                  <Upload className="w-10 h-10 text-primary" />
-                </div>
-                <div className="text-center">
-                  <p className="text-foreground font-medium text-lg">أسقط مستندك هنا</p>
-                  <p className="text-muted-foreground">أو انقر للتصفح</p>
-                  <p className="text-sm text-muted-foreground mt-2">(JPG, PNG, PDF)</p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Contrast Slider - Only visible when image is uploaded */}
-          {imagePreview && !isProcessing && (
-            <div className="glass-input rounded-xl p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <SlidersHorizontal className="w-4 h-4 text-primary" />
-                  <span className="text-sm font-medium text-foreground">التباين / Contraste</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground font-mono">
-                    {Math.round(contrast * 100)}%
-                  </span>
-                  {contrast !== 1.0 && (
+                  {zoom > 1 && (
                     <button
-                      onClick={resetContrast}
-                      className="p-1.5 rounded-lg hover:bg-muted/50 transition-colors"
-                      aria-label="إعادة تعيين التباين"
-                      title="Reset to 100%"
+                      onClick={handleResetZoom}
+                      className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-md hover:bg-black/70 transition-colors text-xs backdrop-blur-sm z-10"
                     >
-                      <RotateCcw className="w-4 h-4 text-muted-foreground hover:text-primary" />
+                      Reset Zoom
                     </button>
                   )}
+
+                  <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/50 text-white rounded text-xs backdrop-blur-sm pointer-events-none">
+                    {Math.round(zoom * 100)}%
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-4">
+                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/10 flex items-center justify-center">
+                    <Upload className="w-10 h-10 text-primary" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-foreground font-medium text-lg">أسقط مستندك هنا</p>
+                    <p className="text-muted-foreground">أو انقر للتصفح</p>
+                    <p className="text-sm text-muted-foreground mt-2">(JPG, PNG, PDF)</p>
+                  </div>
+                </div>
+              )
+            }
+          </div >
+
+          {/* Contrast Slider - Only visible when image is uploaded */}
+          {
+            imagePreview && !isProcessing && (
+              <div className="glass-input rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <SlidersHorizontal className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-medium text-foreground">التباين / Contraste</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground font-mono">
+                      {Math.round(contrast * 100)}%
+                    </span>
+                    {contrast !== 1.0 && (
+                      <button
+                        onClick={resetContrast}
+                        className="p-1.5 rounded-lg hover:bg-muted/50 transition-colors"
+                        aria-label="إعادة تعيين التباين"
+                        title="Reset to 100%"
+                      >
+                        <RotateCcw className="w-4 h-4 text-muted-foreground hover:text-primary" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <input
+                  type="range"
+                  min="0.5"
+                  max="2.0"
+                  step="0.05"
+                  value={contrast}
+                  onChange={(e) => setContrast(parseFloat(e.target.value))}
+                  className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                  style={{
+                    background: `linear-gradient(to right, hsl(var(--primary)) 0%, hsl(var(--primary)) ${((contrast - 0.5) / 1.5) * 100}%, hsl(var(--muted)) ${((contrast - 0.5) / 1.5) * 100}%, hsl(var(--muted)) 100%)`
+                  }}
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>50%</span>
+                  <span>100%</span>
+                  <span>200%</span>
                 </div>
               </div>
-              <input
-                type="range"
-                min="0.5"
-                max="2.0"
-                step="0.05"
-                value={contrast}
-                onChange={(e) => setContrast(parseFloat(e.target.value))}
-                className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
-                style={{
-                  background: `linear-gradient(to right, hsl(var(--primary)) 0%, hsl(var(--primary)) ${((contrast - 0.5) / 1.5) * 100}%, hsl(var(--muted)) ${((contrast - 0.5) / 1.5) * 100}%, hsl(var(--muted)) 100%)`
-                }}
-              />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>50%</span>
-                <span>100%</span>
-                <span>200%</span>
-              </div>
-            </div>
-          )}
+            )
+          }
 
           <div className="flex items-center gap-3">
             {/* Upload button - always visible */}
@@ -705,10 +450,10 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
               </button>
             )}
           </div>
-        </div>
+        </div >
 
         {/* OCR Result Panel */}
-        <div className="glass-card rounded-2xl p-6 space-y-4">
+        < div className="glass-card rounded-2xl p-6 space-y-4" >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent to-accent/60 flex items-center justify-center shadow-lg">
@@ -753,9 +498,9 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
             <Send className="w-5 h-5" />
             <span>إرسال للترجمة</span>
           </button>
-        </div>
-      </div>
-    </div>
+        </div >
+      </div >
+    </div >
   );
 };
 
