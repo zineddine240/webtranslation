@@ -109,3 +109,4 @@ Desktop.ini
 *.temp
 tmp/
 temp/
+*.timestamp-*.mjs
