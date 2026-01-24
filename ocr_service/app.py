@@ -81,13 +81,13 @@ def scan_image():
             mime_type=file.content_type if file.content_type else "image/jpeg"
         )
 
-        prompt = "Extract all text from image whitout any comments or explanations i need only the text."
+        prompt = "Extract all text from  whitout any comments or explanations."
 
         print("🚀 Envoi à Vertex AI...")
         
         # Configuration pour limiter les tokens et optimiser l'OCR
         generation_config = {
-            "max_output_tokens": 2048,  # Limite de sécurité pour économiser
+            "max_output_tokens": 8192,  # Limite de sécurité pour économiser
             "temperature": 0,           # 0 est idéal pour l'OCR (plus précis/déterministe)
         }
 
