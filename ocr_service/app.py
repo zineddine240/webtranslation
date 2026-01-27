@@ -45,7 +45,7 @@ try:
     creds = service_account.Credentials.from_service_account_info(credentials_info)
     vertexai.init(project=PROJECT_ID, location=LOCATION, credentials=creds)
     
-    # UPDATE: Using a specific stable version
+    # Utilisation de Gemini 2.5 Flash
     model_name = "gemini-2.5-flash" 
     
     print(f"⏳ Chargement du modèle {model_name}...")
@@ -86,14 +86,17 @@ def scan_image():
             mime_type=file.content_type if file.content_type else "image/jpeg"
         )
 
-        prompt = "Extract all text from  image."
+        # Prompt optimisé pour la fidélité
+        prompt = "OCR this image. Extract all text exactly as it appears, maintaining the original layout, line breaks, and formatting. Do not add any comments or explanations."
 
-        print("🚀 Envoi à Vertex AI...")
+        print("🚀 Envoi à Vertex AI (Mode Haute Fidélité)...")
         
-        # Configuration pour limiter les tokens et optimiser l'OCR
+        # Configuration de précision
         generation_config = {
-            "max_output_tokens": 8192,  # Limite de sécurité pour économiser
-            "temperature": 0,           # 0 est idéal pour l'OCR (plus précis/déterministe)
+            "max_output_tokens": 8192,
+            "temperature": 0.0,
+            "top_p": 1.0,
+            "top_k": 1,
         }
 
         # Retry logic for 429 Resource Exhausted
