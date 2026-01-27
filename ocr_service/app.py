@@ -86,7 +86,7 @@ def scan_image():
             mime_type=file.content_type if file.content_type else "image/jpeg"
         )
 
-        prompt = "Extract all text from  image as it appears without any comments or explanations."
+        prompt = "Extract all text from  image."
 
         print("🚀 Envoi à Vertex AI...")
         
