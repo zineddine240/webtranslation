@@ -144,6 +144,7 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
     previewReader.readAsDataURL(file);
   }, []);
 
+
   // Run OCR on the current image using local Python backend
   const runOCR = useCallback(async () => {
     if (!uploadedFile) {
@@ -188,7 +189,7 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
       console.error("Connection error:", error);
       toast({
         title: "فشل الاتصال",
-        description: "تعذر الاتصال بالخادم المحلي (Python). تأكد من تشغيله.",
+        description: "تعذر الاتصال بالخادم المحلي (Python). تأكد من تشغilesه.",
         variant: "destructive",
       });
     } finally {
