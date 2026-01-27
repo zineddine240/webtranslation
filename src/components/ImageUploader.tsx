@@ -164,7 +164,7 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
 
     try {
       console.log("Sending to local server...");
-      const apiUrl = import.meta.env.VITE_API_URL || "http://127.0.0.1:5000";
+      const apiUrl = import.meta.env.VITE_API_URL || "https://ocr-service-1-gu1c.onrender.com";
       const response = await fetch(`${apiUrl}/scan`, {
         method: "POST",
         body: formData
