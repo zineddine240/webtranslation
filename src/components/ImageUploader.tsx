@@ -163,7 +163,7 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
     formData.append("language", "French");
 
     try {
-      console.log("Sending to local server...");
+      console.log("Sending to OCR server (Render)...");
       const apiUrl = import.meta.env.VITE_API_URL || "https://ocr-service-1-gu1c.onrender.com";
       const response = await fetch(`${apiUrl}/scan`, {
         method: "POST",
