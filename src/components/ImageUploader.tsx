@@ -160,10 +160,19 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
     setOcrResult("");
 
     const formData = new FormData();
-    formData.append("image", uploadedFile);
-    formData.append("language", "French");
 
     try {
+      // Use the contrast-adjusted image if it was modified, otherwise original
+      let fileToUpload: Blob | File = uploadedFile;
+      if (imagePreview && (contrast !== 1.0)) {
+        console.log("Using contrast-adjusted image for OCR...");
+        const res = await fetch(imagePreview);
+        fileToUpload = await res.blob();
+      }
+
+      formData.append("image", fileToUpload, uploadedFile.name);
+      formData.append("language", "French"); // Keep as default or dynamic if needed
+
       console.log("Sending to OCR server...");
       const apiUrl = import.meta.env.VITE_API_URL || "https://ocr-service-1-gu1c.onrender.com";
       const response = await fetch(`${apiUrl}/scan`, {
