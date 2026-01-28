@@ -78,7 +78,7 @@ def init_vertex():
         vertexai.init(project=PROJECT_ID, location=LOCATION, credentials=creds)
         
         # MODIFICATION : Utilisation de Gemini 2.5 Flash
-        model_name = "gemini-2.5-flash" 
+        model_name = "gemini-3-flash-preview" 
         
         print(f"⏳ Chargement du modèle {model_name}...")
         model = GenerativeModel(model_name)
