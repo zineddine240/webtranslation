@@ -16,7 +16,7 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 
 # --- CONFIGURATION VERTEX AI ---
 PROJECT_ID = os.getenv("GOOGLE_PROJECT_ID")
-LOCATION = "us-central1"
+LOCATION = "global" # Gemini 3 Preview est souvent sur l'endpoint global
 
 print(f"--- Initialisation Vertex AI ({PROJECT_ID}) ---")
 
@@ -77,7 +77,7 @@ def init_vertex():
         creds = service_account.Credentials.from_service_account_info(credentials_info)
         vertexai.init(project=PROJECT_ID, location=LOCATION, credentials=creds)
         
-        # MODIFICATION : Utilisation de Gemini 2.5 Flash
+        # MODIFICATION : Utilisation de Gemini 3 Flash Preview
         model_name = "gemini-3-flash-preview" 
         
         print(f"⏳ Chargement du modèle {model_name}...")
