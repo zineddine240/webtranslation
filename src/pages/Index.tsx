@@ -4,24 +4,18 @@ import Header from "@/components/Header";
 import TranslationPanel from "@/components/TranslationPanel";
 import ImageUploader from "@/components/ImageUploader";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTranslations } from "@/hooks/useTranslations";
 import { Loader2, Star } from "lucide-react";
 
 const Index = () => {
   const [frenchText, setFrenchText] = useState("");
   const { user, loading } = useAuth();
-  const { saveTranslation } = useTranslations();
 
   const handleTextExtracted = useCallback((text: string) => {
     setFrenchText(text);
   }, []);
 
   const handleTranslationComplete = useCallback(async (french: string, arabic: string) => {
-    await saveTranslation(french, arabic);
-  }, [saveTranslation]);
-
-  const handleSelectFromHistory = useCallback((french: string, _arabic: string) => {
-    setFrenchText(french);
+    // History saved removed as requested
   }, []);
 
   if (loading) {
