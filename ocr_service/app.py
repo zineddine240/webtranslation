@@ -27,10 +27,12 @@ def init_vertex():
     try:
         # Reconstitution des identifiants depuis les variables d'environnement
         private_key = os.getenv("GOOGLE_PRIVATE_KEY", "")
-        if private_key:
-            private_key = private_key.replace('\\n', '\n').strip()
-            if private_key.startswith('"') and private_key.endswith('"'):
-                private_key = private_key[1:-1]
+        if not private_key:
+            return False, "La variable GOOGLE_PRIVATE_KEY est vide ou absente."
+            
+        private_key = private_key.replace('\\n', '\n').strip()
+        if private_key.startswith('"') and private_key.endswith('"'):
+            private_key = private_key[1:-1]
 
         credentials_info = {
             "type": "service_account",
@@ -55,11 +57,11 @@ def init_vertex():
         print(f"⏳ Chargement du modèle {model_name}...")
         model = GenerativeModel(model_name)
         print("✅ Modèle Vertex AI chargé avec succès.")
-        return True
+        return True, ""
     except Exception as e:
         print("❌ ERREUR INITIALISATION VERTEX :")
         print(e)
-        return False
+        return False, str(e)
 
 # Initialisation au démarrage
 init_vertex()
@@ -72,8 +74,9 @@ def ping():
 def scan_image():
     global model
     if model is None:
-        if not init_vertex():
-            return jsonify({"success": False, "error": "Le modèle AI n'est pas chargé (Erreur serveur)"}), 500
+        success, error_msg = init_vertex()
+        if not success:
+            return jsonify({"success": False, "error": f"Initialisation Vertex échouée: {error_msg}"}), 500
 
     if 'image' not in request.files:
         return jsonify({"success": False, "error": "Aucune image envoyée"}), 400
