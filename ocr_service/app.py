@@ -35,24 +35,28 @@ def init_vertex():
             return False, "La variable GOOGLE_PRIVATE_KEY est vide ou absente."
             
         import re
+        
+        # 1. On traite les séquences d'échappement littérales AVANT toute chose
+        # On remplace les \n et \\n par des espaces pour ne pas garder le 'n'
+        private_key = private_key.replace('\\\\n', ' ').replace('\\n', ' ').replace('\\r', ' ')
+        
         header = "-----BEGIN PRIVATE KEY-----"
         footer = "-----END PRIVATE KEY-----"
         
-        # On essaie d'extraire ce qu'il y a entre les balises s'il y en a
+        # 2. On extrait le contenu
         content = private_key
         if header in private_key and footer in private_key:
             content = private_key.split(header)[1].split(footer)[0]
         
-        # On supprime TOUT ce qui n'est pas un caractère Base64 (lettres, chiffres, +, /, =)
-        # Cela élimine les \n, les \r, les espaces, les \\n, etc.
+        # 3. On supprime TOUT ce qui n'est pas un caractère Base64 (A-Z, a-z, 0-9, +, /, =)
         content = re.sub(r'[^A-Za-z0-9+/=]', '', content)
         
-        # FIX: Correction du Padding Base64 (doit être un multiple de 4)
+        # 4. Correction du Padding Base64
         missing_padding = len(content) % 4
         if missing_padding:
             content += '=' * (4 - missing_padding)
         
-        # On reconstruit une clé PEM propre (64 caractères par ligne)
+        # 5. On reconstruit une clé PEM propre
         lines = [content[i:i+64] for i in range(0, len(content), 64)]
         private_key = f"{header}\n" + "\n".join(lines) + f"\n{footer}\n"
 
