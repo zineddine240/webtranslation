@@ -102,7 +102,7 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
 
         // Put the modified data back
         ctx.putImageData(imageDataObj, 0, 0);
-        resolve(canvas.toDataURL('image/jpeg', 0.95));
+        resolve(canvas.toDataURL('image/png'));
       };
       img.onerror = reject;
       img.src = imageData;

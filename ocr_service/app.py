@@ -5,7 +5,6 @@ import vertexai
 from vertexai.generative_models import GenerativeModel, Part
 
 app = Flask(__name__)
-# Configuration CORS ultra-permissive pour Render et Vercel
 CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
 # --- CONFIGURATION VERTEX AI ---
@@ -22,7 +21,6 @@ print(f"--- Initialisation Vertex AI ({PROJECT_ID}) ---")
 model = None
 
 try:
-    # Reconstitution des identifiants depuis les variables d'environnement
     private_key = os.getenv("GOOGLE_PRIVATE_KEY")
     if private_key:
         private_key = private_key.replace('\\n', '\n')
@@ -44,14 +42,10 @@ try:
     creds = service_account.Credentials.from_service_account_info(credentials_info)
     vertexai.init(project=PROJECT_ID, location=LOCATION, credentials=creds)
     
-    # Utilisation de Gemini 2.5 Flash
+    # On reste sur 2.5 Flash comme demandé, mais on peaufine l'initialisation
     model_name = "gemini-2.5-flash" 
-    
     print(f"⏳ Chargement du modèle {model_name}...")
-    model = GenerativeModel(
-        model_name,
-        system_instruction=["Extract all text from image, whitout any comments or explanations"]
-    )
+    model = GenerativeModel(model_name)
     print("✅ Modèle Vertex AI chargé avec succès.")
 
 except Exception as e:
@@ -60,46 +54,49 @@ except Exception as e:
 
 @app.route('/', methods=['GET'])
 def home():
-    return jsonify({
-        "message": "OCR Service is running!", 
-        "status": "online", 
-        "deployed_model": "gemini-2.5-flash",
-        "last_update": "14:26"
-    })
+    return jsonify({"status": "online", "model": "gemini-2.5-flash"})
 
 @app.route('/scan', methods=['POST'])
 def scan_image():
     global model
     if 'image' not in request.files:
-        return jsonify({"success": False, "error": "Aucune image envoyée"}), 400
+        return jsonify({"success": False, "error": "No image found"}), 400
 
     if model is None:
-        return jsonify({"success": False, "error": "Le modèle AI n'est pas chargé (Erreur serveur)"}), 500
+        return jsonify({"success": False, "error": "AI model not loaded"}), 500
 
     file = request.files['image']
+    lang = request.form.get('language', 'French')
     
     try:
-        # Lecture de l'image
         img_bytes = file.read()
         
-        # Préparation pour Vertex AI
-        image_part = Part.from_data(
-            data=img_bytes, 
-            mime_type=file.content_type if file.content_type else "image/jpeg"
-        )
+        # Détection du MIME type réel
+        mime_type = file.content_type
+        if img_bytes.startswith(b'\x89PNG'): mime_type = 'image/png'
+        elif img_bytes.startswith(b'\xff\xd8'): mime_type = 'image/jpeg'
 
-        # Prompt
-        prompt = "Extract all text from image correctly, without any additional informations"
+        image_part = Part.from_data(data=img_bytes, mime_type=mime_type if mime_type else "image/jpeg")
 
-        print("🚀 Envoi à Vertex AI...")
+        # PROMPT DE HAUTE PRÉCISION
+        prompt = f"""
+        TRANSCRIPTION TASK:
+        1. Extract all text from this image with 100% accuracy.
+        2. Language: {lang}.
+        3. Preserve exactly the layout, headings, and line breaks.
+        4. Output ONLY the extracted text. 
+        5. DO NOT provide any markdown, commentary, or introduction.
+        """
+
+        print(f"🚀 OCR Haute Fidélité (Langue: {lang})...")
         
-        # Configuration de précision
         generation_config = {
             "max_output_tokens": 8192,
             "temperature": 0.0,
+            "top_p": 1.0,
+            "top_k": 1
         }
 
-        # Configuration de sécurité pour éviter les blocages sur des documents légitimes
         from vertexai.generative_models import HarmCategory, HarmBlockThreshold
         safety_settings = {
             HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
@@ -108,35 +105,20 @@ def scan_image():
             HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
         }
 
-        # Retry logic for 429 Resource Exhausted
-        import time
-        from google.api_core.exceptions import ResourceExhausted
+        # On envoie l'image en premier pour que l'IA se focalise dessus immédiatement
+        response = model.generate_content(
+            [image_part, prompt],
+            generation_config=generation_config,
+            safety_settings=safety_settings
+        )
 
-        response = None
-        for attempt in range(4): # Try 4 times (Initial + 3 retries)
-            try:
-                response = model.generate_content(
-                    [prompt, image_part],
-                    generation_config=generation_config,
-                    safety_settings=safety_settings
-                )
-                break
-            except ResourceExhausted:
-                if attempt == 3:
-                    raise # Re-raise if last attempt
-                wait_time = 2 ** attempt # 1s, 2s, 4s
-                print(f"⚠️ Quota dépassé (429), nouvelle tentative dans {wait_time}s...")
-                time.sleep(wait_time)
-            except Exception as e:
-                raise e
+        if not response.text:
+            return jsonify({"success": False, "error": "Empty response from AI"}), 500
 
-        final_text = response.text
-        print("✅ Réponse reçue !")
-        
-        return jsonify({"success": True, "text": final_text})
+        return jsonify({"success": True, "text": response.text.strip()})
 
     except Exception as e:
-        print(f"❌ ERREUR PENDANT LE SCAN : {e}")
+        print(f"❌ ERREUR OCR : {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 if __name__ == '__main__':
