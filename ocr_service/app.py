@@ -30,16 +30,26 @@ def init_vertex():
         if not private_key:
             return False, "La variable GOOGLE_PRIVATE_KEY est vide ou absente."
             
-        # Nettoyage ultra-robuste de la clé
-        private_key = private_key.strip()
-        # Supprime les guillemets de début/fin si présents
-        if private_key.startswith(('"', "'")) and private_key.endswith(('"', "'")):
-            private_key = private_key[1:-1]
+        # Nettoyage RADICAL de la clé
+        if not private_key:
+            return False, "La variable GOOGLE_PRIVATE_KEY est vide ou absente."
+            
+        import re
+        header = "-----BEGIN PRIVATE KEY-----"
+        footer = "-----END PRIVATE KEY-----"
         
-        # Remplace les doubles antislashs \\n par de vrais retours à la ligne
-        private_key = private_key.replace('\\n', '\n')
-        # Au cas où, remplace aussi les retours à la ligne littéraux s'ils sont mal encodés
-        private_key = private_key.replace('\\\\n', '\n')
+        # On essaie d'extraire ce qu'il y a entre les balises s'il y en a
+        content = private_key
+        if header in private_key and footer in private_key:
+            content = private_key.split(header)[1].split(footer)[0]
+        
+        # On supprime TOUT ce qui n'est pas un caractère Base64 (lettres, chiffres, +, /, =)
+        # Cela élimine les \n, les \r, les espaces, les \\n, etc.
+        content = re.sub(r'[^A-Za-z0-9+/=]', '', content)
+        
+        # On reconstruit une clé PEM propre (64 caractères par ligne)
+        lines = [content[i:i+64] for i in range(0, len(content), 64)]
+        private_key = f"{header}\n" + "\n".join(lines) + f"\n{footer}\n"
 
         credentials_info = {
             "type": "service_account",
