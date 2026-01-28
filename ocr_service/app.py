@@ -47,6 +47,11 @@ def init_vertex():
         # Cela élimine les \n, les \r, les espaces, les \\n, etc.
         content = re.sub(r'[^A-Za-z0-9+/=]', '', content)
         
+        # FIX: Correction du Padding Base64 (doit être un multiple de 4)
+        missing_padding = len(content) % 4
+        if missing_padding:
+            content += '=' * (4 - missing_padding)
+        
         # On reconstruit une clé PEM propre (64 caractères par ligne)
         lines = [content[i:i+64] for i in range(0, len(content), 64)]
         private_key = f"{header}\n" + "\n".join(lines) + f"\n{footer}\n"
