@@ -30,9 +30,16 @@ def init_vertex():
         if not private_key:
             return False, "La variable GOOGLE_PRIVATE_KEY est vide ou absente."
             
-        private_key = private_key.replace('\\n', '\n').strip()
-        if private_key.startswith('"') and private_key.endswith('"'):
+        # Nettoyage ultra-robuste de la clé
+        private_key = private_key.strip()
+        # Supprime les guillemets de début/fin si présents
+        if private_key.startswith(('"', "'")) and private_key.endswith(('"', "'")):
             private_key = private_key[1:-1]
+        
+        # Remplace les doubles antislashs \\n par de vrais retours à la ligne
+        private_key = private_key.replace('\\n', '\n')
+        # Au cas où, remplace aussi les retours à la ligne littéraux s'ils sont mal encodés
+        private_key = private_key.replace('\\\\n', '\n')
 
         credentials_info = {
             "type": "service_account",
