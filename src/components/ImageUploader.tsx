@@ -168,21 +168,17 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
     setIsProcessing(true);
     setOcrResult("");
 
-    const formData = new FormData();
-
     try {
       console.log("Compressing image...");
       const compressedImageBase64 = await compressImage(uploadedFile);
-      const res = await fetch(compressedImageBase64);
-      const blob = await res.blob();
-      formData.append("image", blob, "image.jpg");
 
-      console.log("Sending to OCR server...");
-      const apiUrl = import.meta.env.VITE_API_URL || "https://ocrservice-1052128471312.us-central1.run.app";
-
-      const response = await fetch(`${apiUrl}/scan`, {
+      console.log("Sending to local OCR API...");
+      const response = await fetch("/api/scan", {
         method: "POST",
-        body: formData
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ image: compressedImageBase64 })
       });
 
       const data = await response.json();
@@ -193,7 +189,7 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
         setShowOcrPanel(true);
         toast({
           title: "تم استخراج النص بنجاح ✓",
-          description: `Temps: ${data.time}`,
+          description: "Traitement terminé avec succès",
         });
       } else {
         throw new Error(data.error || "Unknown server error");
