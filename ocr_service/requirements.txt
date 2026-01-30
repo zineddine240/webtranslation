@@ -1,8 +1,0 @@
-flask
-flask-cors
-google-cloud-aiplatform>=1.70.0
-google-genai
-python-dotenv
-google-auth
-gunicorn
-Pillow
