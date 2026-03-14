@@ -1,6 +1,6 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { Upload, FileText, X, Loader2, Sparkles, Send, Edit3, SlidersHorizontal, RotateCcw } from "lucide-react";
+import { Upload, FileText, X, Loader2, Sparkles, Send, Edit3, SlidersHorizontal, RotateCcw, Brush, Undo, Eraser } from "lucide-react";
 
 import { useToast } from "@/hooks/use-toast";
 
@@ -21,20 +21,37 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
   const [isDraggingImage, setIsDraggingImage] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [originalImageData, setOriginalImageData] = useState<string | null>(null);
+  const [isDrawMode, setIsDrawMode] = useState(false);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [drawColor, setDrawColor] = useState("#000000");
+  const [brushRadius, setBrushRadius] = useState(15);
+  const [imgIntrinsicSize, setImgIntrinsicSize] = useState({ w: 0, h: 0 });
+  const [drawHistory, setDrawHistory] = useState<ImageData[]>([]);
+
   const imageRef = useRef<HTMLImageElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const drawCanvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
 
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    if (!imagePreview) return;
-    e.stopPropagation();
-    e.preventDefault();
+  const imageContainerRef = useRef<HTMLDivElement>(null);
 
-    setZoom((prevZoom) => {
-      const newZoom = Math.min(Math.max(prevZoom - e.deltaY * 0.001, 1), 5);
-      return newZoom;
-    });
+  useEffect(() => {
+    const el = imageContainerRef.current;
+    if (!el) return;
+    
+    const handleWheelNative = (e: WheelEvent) => {
+      if (imagePreview) {
+        e.preventDefault();
+        e.stopPropagation();
+        setZoom((prevZoom) => Math.min(Math.max(prevZoom - e.deltaY * 0.001, 1), 5));
+      }
+    };
+    
+    el.addEventListener('wheel', handleWheelNative, { passive: false });
+    return () => {
+      el.removeEventListener('wheel', handleWheelNative);
+    };
   }, [imagePreview]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -46,7 +63,6 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (isDraggingImage && zoom > 1) {
-      e.preventDefault();
       setPan({
         x: e.clientX - dragStart.x,
         y: e.clientY - dragStart.y
@@ -108,10 +124,100 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
     setContrast(1.0);
   }, []);
 
+  const saveDrawHistory = useCallback(() => {
+    const canvas = drawCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return;
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    setDrawHistory(prev => [...prev, imageData]);
+  }, []);
+
+  const startDrawing = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    e.stopPropagation();
+    if (!isDrawMode) return;
+    const canvas = drawCanvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    setIsDrawing(true);
+  }, [isDrawMode]);
+
+  const draw = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    e.stopPropagation();
+    if (!isDrawing || !isDrawMode) return;
+    const canvas = drawCanvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.lineTo(x, y);
+    ctx.lineWidth = brushRadius;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    if (drawColor === "eraser") {
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.strokeStyle = "rgba(0,0,0,1)";
+    } else {
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.strokeStyle = drawColor;
+    }
+    ctx.stroke();
+  }, [isDrawing, isDrawMode, drawColor, brushRadius]);
+
+  const stopDrawing = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    e.stopPropagation();
+    if (!isDrawing) return;
+    setIsDrawing(false);
+    saveDrawHistory();
+  }, [isDrawing, saveDrawHistory]);
+
+  const undoDraw = useCallback(() => {
+    setDrawHistory(prev => {
+      if (prev.length <= 1) {
+         const canvas = drawCanvasRef.current;
+         if (canvas) {
+           const ctx = canvas.getContext('2d');
+           ctx?.clearRect(0, 0, canvas.width, canvas.height);
+         }
+         return [];
+      }
+      const newHistory = [...prev];
+      newHistory.pop();
+      const previousState = newHistory[newHistory.length - 1];
+      const canvas = drawCanvasRef.current;
+      if (canvas && previousState) {
+         const ctx = canvas.getContext('2d');
+         ctx?.putImageData(previousState, 0, 0);
+      }
+      return newHistory;
+    });
+  }, []);
+
   const loadImage = useCallback((file: File) => {
     setUploadedFile(file);
     setOcrResult("");
     setShowOcrPanel(false);
+    setImgIntrinsicSize({ w: 0, h: 0 });
+    setDrawHistory([]);
+    setIsDrawMode(false);
+    if (drawCanvasRef.current) {
+        const ctx = drawCanvasRef.current.getContext('2d');
+        ctx?.clearRect(0, 0, drawCanvasRef.current.width, drawCanvasRef.current.height);
+    }
     const previewReader = new FileReader();
     previewReader.onload = () => {
       const dataUrl = previewReader.result as string;
@@ -122,14 +228,11 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
     previewReader.readAsDataURL(file);
   }, []);
 
-  const compressImage = async (file: File): Promise<string> => {
+  const compressImage = async (dataUrl: string): Promise<string> => {
     return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = (event) => {
-        const img = new Image();
-        img.src = event.target?.result as string;
-        img.onload = () => {
+      const img = new Image();
+      img.src = dataUrl;
+      img.onload = () => {
           let width = img.width;
           let height = img.height;
           const MAX_WIDTH = 1024;
@@ -146,17 +249,15 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
             return;
           }
           ctx.drawImage(img, 0, 0, width, height);
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-          resolve(dataUrl);
-        };
-        img.onerror = (error) => reject(error);
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        resolve(compressedDataUrl);
       };
-      reader.onerror = (error) => reject(error);
+      img.onerror = (error) => reject(error);
     });
   };
 
   const runOCR = useCallback(async () => {
-    if (!uploadedFile) {
+    if (!uploadedFile || !imagePreview) {
       toast({
         title: "لا توجد صورة",
         description: "الرجاء رفع صورة أولاً",
@@ -165,12 +266,37 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
       return;
     }
 
-    setIsProcessing(true);
     setOcrResult("");
 
     try {
+      console.log("Combining image and drawing...");
+      let finalDataUrl = imagePreview;
+      if (drawCanvasRef.current && imgIntrinsicSize.w > 0) {
+         const canvas = document.createElement('canvas');
+         canvas.width = imgIntrinsicSize.w;
+         canvas.height = imgIntrinsicSize.h;
+         const ctx = canvas.getContext('2d');
+         
+         // apply a white background to prevent transparecy to black issues during JPEG conversion
+         ctx!.fillStyle = '#FFFFFF';
+         ctx!.fillRect(0, 0, canvas.width, canvas.height);
+
+         const img = new window.Image();
+         img.crossOrigin = 'anonymous';
+         await new Promise((resolve, reject) => {
+           img.onload = resolve;
+           img.onerror = reject;
+           img.src = imagePreview;
+         });
+         ctx?.drawImage(img, 0, 0);
+         ctx?.drawImage(drawCanvasRef.current, 0, 0);
+         finalDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+      }
+
+      setIsProcessing(true);
+
       console.log("Compressing image...");
-      const compressedImageBase64 = await compressImage(uploadedFile);
+      const compressedImageBase64 = await compressImage(finalDataUrl);
 
       console.log("Sending to local OCR API...");
       const response = await fetch("/api/scan", {
@@ -192,7 +318,9 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
           description: "Traitement terminé avec succès",
         });
       } else {
-        throw new Error(data.error || "Unknown server error");
+        const errorMsg = data.error || "Unknown server error";
+        console.error("Backend Error JSON:", data);
+        throw new Error(errorMsg);
       }
 
     } catch (error) {
@@ -205,7 +333,7 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
     } finally {
       setIsProcessing(false);
     }
-  }, [uploadedFile, toast]);
+  }, [uploadedFile, imagePreview, imgIntrinsicSize, toast]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -247,6 +375,9 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
     setShowOcrPanel(false);
     setContrast(1.0);
     setZoom(1);
+    setIsDrawMode(false);
+    setDrawHistory([]);
+    setImgIntrinsicSize({ w: 0, h: 0 });
     setPan({ x: 0, y: 0 });
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -314,25 +445,45 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
               </div>
             ) : imagePreview ? (
               <div
+                ref={imageContainerRef}
                 className="relative w-full h-full flex items-center justify-center overflow-hidden bg-black/5 rounded-lg border border-border/50"
-                onWheel={handleWheel}
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
+                onMouseDown={(e) => { if (!isDrawMode) handleMouseDown(e); }}
+                onMouseMove={(e) => { if (!isDrawMode) handleMouseMove(e); }}
+                onMouseUp={(e) => { if (!isDrawMode) handleMouseUp(); }}
+                onMouseLeave={(e) => { if (!isDrawMode) handleMouseUp(); }}
               >
-                <img
-                  ref={imageRef}
-                  src={imagePreview}
-                  alt="Preview"
-                  className="max-w-full max-h-full object-contain transition-transform duration-75 ease-linear"
+                <div 
+                  className="relative inline-flex items-center justify-center transition-transform duration-75 ease-linear"
                   style={{
                     transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-                    cursor: zoom > 1 ? (isDraggingImage ? "grabbing" : "grab") : "default",
-                    imageRendering: "auto"
+                    cursor: isDrawMode ? "crosshair" : (zoom > 1 ? (isDraggingImage ? "grabbing" : "grab") : "default"),
+                    maxWidth: '100%',
+                    maxHeight: '100%'
                   }}
-                  draggable={false}
-                />
+                >
+                  <img
+                    ref={imageRef}
+                    src={imagePreview}
+                    alt="Preview"
+                    className="max-w-full max-h-full object-contain pointer-events-none"
+                    style={{ imageRendering: "auto" }}
+                    draggable={false}
+                    onLoad={(e) => setImgIntrinsicSize({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight })}
+                  />
+                  {imgIntrinsicSize.w > 0 && (
+                     <canvas
+                       ref={drawCanvasRef}
+                       width={imgIntrinsicSize.w}
+                       height={imgIntrinsicSize.h}
+                       className="absolute inset-0 w-full h-full touch-none"
+                       style={{ pointerEvents: isDrawMode ? 'auto' : 'none' }}
+                       onMouseDown={startDrawing}
+                       onMouseMove={draw}
+                       onMouseUp={stopDrawing}
+                       onMouseLeave={stopDrawing}
+                     />
+                  )}
+                </div>
                 {zoom > 1 && (
                   <button
                     onClick={handleResetZoom}
@@ -360,7 +511,57 @@ const ImageUploader = ({ onTextExtracted }: ImageUploaderProps) => {
           </div>
 
           {imagePreview && !isProcessing && (
-            <div className="glass-input rounded-xl p-4 space-y-3">
+            <div className="glass-input rounded-xl p-4 space-y-4">
+              <div className="flex flex-col gap-3 pb-3 border-b border-border/50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Brush className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-medium text-foreground">أدوات التعديل / Outils d'édition</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setIsDrawMode(!isDrawMode)}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${isDrawMode ? 'bg-primary text-white shadow-md' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+                    >
+                      {isDrawMode ? 'إيقاف الرسم' : 'رسم / طمس'}
+                    </button>
+                  </div>
+                </div>
+                
+                {isDrawMode && (
+                  <div className="flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+                    <div className="flex gap-1.5 p-1 bg-muted/50 rounded-lg">
+                      <button onClick={() => setDrawColor("#000000")} className={`w-6 h-6 rounded-full bg-black border-2 ${drawColor === "#000000" ? 'border-primary ring-2 ring-primary/30' : 'border-transparent'}`} title="Black" />
+                      <button onClick={() => setDrawColor("#FFFFFF")} className={`w-6 h-6 rounded-full bg-white border-2 ${drawColor === "#FFFFFF" ? 'border-primary ring-2 ring-primary/30' : 'border-gray-200'}`} title="White" />
+                      <button onClick={() => setDrawColor("eraser")} className={`w-6 h-6 flex items-center justify-center rounded-full bg-muted border-2 ${drawColor === "eraser" ? 'border-primary text-primary' : 'border-transparent text-muted-foreground'}`} title="Eraser">
+                        <Eraser className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    
+                    <div className="flex-1 flex items-center gap-2">
+                       <span className="text-xs text-muted-foreground">حجم:</span>
+                       <input
+                          type="range"
+                          min="5"
+                          max="50"
+                          value={brushRadius}
+                          onChange={(e) => setBrushRadius(parseInt(e.target.value))}
+                          className="flex-1 h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                       />
+                    </div>
+
+                    <button
+                       onClick={undoDraw}
+                       disabled={drawHistory.length === 0}
+                       className="p-1.5 text-muted-foreground disabled:opacity-30 hover:bg-muted rounded-md transition-colors"
+                       title="تراجع"
+                    >
+                       <Undo className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <SlidersHorizontal className="w-4 h-4 text-primary" />

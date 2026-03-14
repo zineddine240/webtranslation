@@ -18,23 +18,13 @@ const queryClient = new QueryClient();
 const ActivationPage = React.lazy(() => import("./pages/ActivationPage"));
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, profile, loading } = useAuth();
+  const { user, loading } = useAuth();
 
   if (loading) return null; // Or a spinner
 
   if (!user) return <Navigate to="/auth" />;
 
-  // Check Subscription
-  const isExpired = !profile?.subscription_expires_at || new Date(profile.subscription_expires_at) < new Date();
-
-  // Explicitly allow your email to bypass everything
-  const isSuperAdmin = user.email === 'achourzineddine16@gmail.com';
-
-  // If user is NOT admin AND subscription is expired/missing
-  if (!profile?.is_admin && !isSuperAdmin && isExpired) {
-    return <Navigate to="/activate" />;
-  }
-
+  // Activation and token checks have been bypassed per user request
   return <>{children}</>;
 };
 

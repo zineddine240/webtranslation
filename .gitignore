@@ -51,7 +51,7 @@ ENV/
 env/
 
 # Credentials & Secrets
-ocr_service/credentials.json
+**/credentials.json
 *.pem
 *.key
 *.cert

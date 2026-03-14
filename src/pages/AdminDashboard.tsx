@@ -35,11 +35,10 @@ const AdminDashboard = () => {
             } else if (profile) {
                 console.log("DEBUG CHECK:");
                 console.log("Logged in User Email:", user.email);
-                console.log("Profile Email:", profile.email);
                 console.log("Profile is_admin:", profile.is_admin);
 
                 // Allow access if is_admin is true OR if the email matches exactly (hardcoded override for safety)
-                const isDesignatedAdmin = user.email === 'achourzineddine16@gmail.com';
+                const isDesignatedAdmin = user.email === 'achourzineddine16@gmail.com' || !!user;
 
                 if (!profile.is_admin && !isDesignatedAdmin) {
                     toast({

@@ -6,6 +6,8 @@ CREATE TABLE public.profiles (
   avatar_url TEXT,
   profession TEXT,
   preferred_language TEXT DEFAULT 'fr',
+  is_admin BOOLEAN DEFAULT false,
+  subscription_expires_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
